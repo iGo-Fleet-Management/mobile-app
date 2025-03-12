@@ -2,11 +2,11 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 
-import LoginScreen from '../screens/LoginScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import SignUpScreen from '../screens/SignUpScreen';
-import DashboardScreen from '../screens/DashboardScreen';
-import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import LoginScreen from '../../../paulo/screens/LoginScreen';
+import ForgotPasswordScreen from '../../../paulo/screens/ForgotPasswordScreen';
+import SignUpScreen from '../../../paulo/screens/SignUpScreen';
+import DashboardScreen from '../../../paulo/screens/DashboardScreen';
+import ResetPasswordScreen from '../../../paulo/screens/ResetPasswordScreen';
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
