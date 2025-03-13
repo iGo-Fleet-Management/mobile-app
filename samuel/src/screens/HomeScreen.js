@@ -13,48 +13,47 @@ import BottomUserBar from '../components/home/BottomUserBar';
 // Assets
 import MapImage from '../../assets/images/google-map-example-blog.png';
 
-
 export default function HomeScreen({ navigation }) {
   const [travelMode, setTravelMode] = useState('roundTrip');
   const [isLiberado, setIsLiberado] = useState(false);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-    <View style={styles.container}>
-      <Header 
-        title="iGO" 
-        onMenuPress={() => navigation.openDrawer()} 
-      />
+      <View style={styles.container}>
+        <Header 
+          title="iGO" 
+          onMenuPress={() => navigation.openDrawer()} 
+        />
 
-      <View style={styles.dateCard}>
-        <Text style={styles.dayOfWeek}>Segunda-Feira</Text>
-        <Text style={styles.date}>27 de Novembro de 2023</Text>
-        
-        <TravelModeSelector 
-          selectedMode={travelMode}
-          onSelectMode={setTravelMode}
+        <View style={styles.dateCard}>
+          <Text style={styles.dayOfWeek}>Segunda-Feira</Text>
+          <Text style={styles.date}>27 de Novembro de 2023</Text>
+          
+          <TravelModeSelector 
+            selectedMode={travelMode}
+            onSelectMode={setTravelMode}
+          />
+        </View>
+
+        <StatusSwitch 
+          value={isLiberado}
+          onValueChange={setIsLiberado}
+          onHelpPress={() => navigation.navigate('Ajuda')}
+        />
+
+        <AlertBox 
+          message="Seu motorista já iniciou o trajeto. Fique atento!"
+          onEditPress={() => {/* Handle edit */}}
+        />
+
+        <MapContainer 
+          source={MapImage}
+        />
+
+        <BottomUserBar 
+          userName="John Doe"
         />
       </View>
-
-      <StatusSwitch 
-        value={isLiberado}
-        onValueChange={setIsLiberado}
-        onHelpPress={() => navigation.navigate('Ajuda')}
-      />
-
-      <AlertBox 
-        message="Seu motorista já iniciou o trajeto. Fique atento!"
-        onEditPress={() => {/* Handle edit */}}
-      />
-
-      <MapContainer 
-        source={MapImage}
-      />
-
-      <BottomUserBar 
-        userName="Hugo de Melo"
-      />
-    </View>
     </SafeAreaView>
   );
 }

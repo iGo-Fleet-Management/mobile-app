@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import UserIcon from '../common/UserIcon';
 
 const BottomUserBar = ({ userName }) => {
   return (
