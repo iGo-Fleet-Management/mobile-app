@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardScreen({ navigation }) {
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
       <Text style={styles.title}>Bem-vindo ao Dashboard</Text>
     </View>
+    </SafeAreaView>
   );
 }
 

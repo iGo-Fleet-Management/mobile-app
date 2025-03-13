@@ -3,9 +3,11 @@ import { View, StyleSheet } from 'react-native';
 import Header from '../components/common/Header';
 import HelpItem from '../components/help/HelpItem';
 import ContactSection from '../components/help/ContactSection';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HelpScreen = ({ navigation }) => {
   return (
+    <SafeAreaView style={styles.helpContainer} edges={['top']}>
     <View style={styles.helpContainer}>
       <Header 
         title="Central de Ajuda" 
@@ -30,6 +32,7 @@ const HelpScreen = ({ navigation }) => {
         />
       </View>
     </View>
+    </SafeAreaView>
   );
 };
 

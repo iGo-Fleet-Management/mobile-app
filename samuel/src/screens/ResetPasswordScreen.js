@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ResetPasswordScreen({ navigation }) {
   const [code, setCode] = useState('');
@@ -22,6 +23,7 @@ export default function ResetPasswordScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
       <Text style={styles.title}>Redefinir Senha</Text>
       <Text style={styles.subtitle}>Digite o código de verificação e crie uma nova senha.</Text>
@@ -54,6 +56,7 @@ export default function ResetPasswordScreen({ navigation }) {
         <Text style={styles.buttonText}>Redefinir Senha</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 }
 

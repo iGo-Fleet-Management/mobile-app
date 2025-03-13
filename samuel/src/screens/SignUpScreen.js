@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -100,6 +101,7 @@ export default function SignUpScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
       <Text style={styles.title}>Complete as informações para criar sua conta</Text>
 
@@ -149,6 +151,7 @@ export default function SignUpScreen({ navigation }) {
         <Text style={styles.buttonText}>Criar Conta</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 }
 

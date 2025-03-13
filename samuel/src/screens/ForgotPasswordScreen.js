@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -30,6 +31,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
       <Text style={styles.title}>Esqueci minha senha</Text>
       <Text style={styles.subtitle}>Digite seu e-mail e enviaremos um código de verificação.</Text>
@@ -54,6 +56,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         <Text style={styles.link}>Voltar para o login</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 }
 

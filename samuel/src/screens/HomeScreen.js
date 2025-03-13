@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Components
 import Header from '../components/common/Header';
@@ -18,6 +19,7 @@ export default function HomeScreen({ navigation }) {
   const [isLiberado, setIsLiberado] = useState(false);
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
       <Header 
         title="iGO" 
@@ -53,6 +55,7 @@ export default function HomeScreen({ navigation }) {
         userName="Hugo de Melo"
       />
     </View>
+    </SafeAreaView>
   );
 }
 

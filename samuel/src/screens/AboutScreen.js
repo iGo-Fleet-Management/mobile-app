@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Header from '../components/common/Header';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const AboutScreen = ({ navigation }) => {
   return (
+    <SafeAreaView style={styles.aboutContainer} edges={['top']}>
     <View style={styles.aboutContainer}>
       <Header 
         title="Sobre o iGO" 
@@ -30,6 +32,7 @@ const AboutScreen = ({ navigation }) => {
         </Text>
       </View>
     </View>
+    </SafeAreaView>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import components
 import Header from '../components/common/Header';
@@ -24,6 +25,7 @@ export default function PassengersScreen({ navigation }) {
   );
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <View style={styles.container}>
       <Header 
         title="Passageiros" 
@@ -51,6 +53,7 @@ export default function PassengersScreen({ navigation }) {
         onPress={() => navigation.navigate('AddPassenger')}
       />
     </View>
+    </SafeAreaView>
   );
 }
 
