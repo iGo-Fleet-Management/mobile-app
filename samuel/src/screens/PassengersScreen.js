@@ -48,7 +48,7 @@ export default function PassengersScreen({ navigation }) {
       </ScrollView>
 
       <AddPassengerButton 
-        onPress={() => {/* Handle add passenger */}}
+        onPress={() => navigation.navigate('AddPassenger')}
       />
     </View>
   );

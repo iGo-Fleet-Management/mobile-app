@@ -2,7 +2,13 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 
-// Import Drawer Navigator
+// Import Auth Screens
+import LoginScreen from '../screens/LoginScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import SignUpScreen from '../screens/SignUpScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+
+// Import Drawer Navigator for main app
 import DrawerNavigator from './DrawerNavigator';
 
 const Stack = createStackNavigator();
@@ -11,14 +17,19 @@ const StackNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName="Login"
         screenOptions={{
           headerShown: false,
         }}
       >
-        <Stack.Screen 
-          name="Main" 
-          component={DrawerNavigator} 
-        />
+        {/* Auth Screens */}
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        
+        {/* Main App */}
+        <Stack.Screen name="Main" component={DrawerNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );
