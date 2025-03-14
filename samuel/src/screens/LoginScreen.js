@@ -13,8 +13,6 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleLogin = () => {
-    console.log("E-mail digitado:", email);
-    console.log("Senha digitada:", password);
 
     if (!email || !password) {
       Alert.alert("Erro", "Todos os campos são obrigatórios!");

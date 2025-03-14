@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import LogoutConfirmation from '../components/common/Logout';
 
 const PassengerProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState({
@@ -17,6 +18,8 @@ const PassengerProfileScreen = ({ navigation }) => {
     ]
   });
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const handleEditProfile = () => {
     navigation.navigate('EditProfile');
   };
@@ -26,8 +29,16 @@ const PassengerProfileScreen = ({ navigation }) => {
   };
 
   const handleLogout = () => {
-    // Show the logout confirmation dialog
-    navigation.setParams({ showLogoutConfirm: true });
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    navigation.navigate('Login');
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -86,7 +97,11 @@ const PassengerProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Logout Confirmation Dialog would go here */}
+      <LogoutConfirmation
+        visible={showLogoutModal}
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+      />
     </SafeAreaView>
   );
 };
