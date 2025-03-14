@@ -39,7 +39,6 @@ export default function LoginScreen({ navigation }) {
           resizeMode="contain"
         />
       </View>
-      <Text style={styles.title}>Van Management</Text>
       <Text style={styles.subtitle}>Entre com suas credenciais</Text>
 
       <TextInput

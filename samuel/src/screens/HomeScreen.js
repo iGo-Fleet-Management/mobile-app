@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import UserIcon from '../components/common/UserIcon';
 
 // Components
 import Header from '../components/common/Header';
@@ -13,17 +14,27 @@ import BottomUserBar from '../components/home/BottomUserBar';
 // Assets
 import MapImage from '../../assets/images/google-map-example-blog.png';
 
+
 export default function HomeScreen({ navigation }) {
   const [travelMode, setTravelMode] = useState('roundTrip');
   const [isLiberado, setIsLiberado] = useState(false);
 
+  const handleUserIconPress = () => {
+    navigation.navigate('Profile');
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.container}>
-        <Header 
-          title="iGO" 
-          onMenuPress={() => navigation.openDrawer()} 
-        />
+        <View style={styles.headerContainer}>
+          <Header 
+            title="iGO" 
+            onMenuPress={() => navigation.openDrawer()} 
+          />
+          <View style={styles.userIconWrapper}>
+            <UserIcon onPress={handleUserIconPress} userName="John" />
+          </View>
+        </View>
 
         <View style={styles.dateCard}>
           <Text style={styles.dayOfWeek}>Segunda-Feira</Text>
@@ -62,6 +73,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  headerContainer: {
+    position: 'relative',
+  },
+  userIconWrapper: {
+    position: 'absolute',
+    right: 15,
+    top: 0,
+    height: 60,
+    justifyContent: 'center',
   },
   dateCard: {
     backgroundColor: '#ffffff',
