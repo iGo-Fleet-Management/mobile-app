@@ -1,7 +1,7 @@
-import eslintPluginPrettier from 'eslint-plugin-prettier';
-import eslintConfigPrettier from 'eslint-config-prettier';
+const eslintPluginPrettier = require('eslint-plugin-prettier');
+const eslintConfigPrettier = require('eslint-config-prettier');
 
-export default [
+module.exports = [
   {
     languageOptions: {
       ecmaVersion: 2021,

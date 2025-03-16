@@ -12,7 +12,11 @@ exports.register = async (req, res) => {
     );
     res.status(201).json({ user });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error.message === 'O e-mail já está em uso') {
+      res.status(409).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 };
 

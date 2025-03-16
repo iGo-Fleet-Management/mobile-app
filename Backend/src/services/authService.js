@@ -4,6 +4,16 @@ const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
 
 exports.register = async (user_type, name, last_name, email, password) => {
+  const existingUser = await User.findOne({
+    where: {
+      email: email,
+    },
+  });
+
+  if (existingUser) {
+    throw new Error('Este email já está registrado');
+  }
+
   const password_hash = await bcrypt.hash(password, 10);
   const user = await User.create({
     user_type,
