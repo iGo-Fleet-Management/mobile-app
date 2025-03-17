@@ -8,7 +8,7 @@ const { authenticate } = require('../middlewares/auth');
 const router = express.Router();
 
 router.put(
-  '/complete',
+  '/complete-profile',
   authenticate,
   validate(profileSchema),
   profileController.completeRegistration
