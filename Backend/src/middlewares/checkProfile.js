@@ -9,9 +9,12 @@ exports.checkProfileComplete = async (req, res, next) => {
         code: 'PROFILE_INCOMPLETE',
         message: 'Complete seu cadastro para continuar',
       });
+    } else {
+      return res.status(200).json({
+        code: 'SUCCESS',
+        message: 'Cadastro completo',
+      });
     }
-
-    next();
   } catch (error) {
     res.status(500).json({ error: 'Error ao verificar perfil' });
   }

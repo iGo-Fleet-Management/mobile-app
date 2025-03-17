@@ -14,16 +14,12 @@ exports.authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    console.log('Token recebido:', token);
 
     // Verificar e decodificar o token
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token decodificado:', decoded);
 
     // Encontrar o usuário no banco de dados
-    console.log('Procurando usuário com ID:', decoded.user_id);
     const user = await User.findByPk(decoded.user_id);
-    console.log('Usuário encontrado:', user ? 'Sim' : 'Não');
     if (!user) {
       return res.status(404).json({
         code: 'USER_NOT_FOUND',

@@ -1,5 +1,5 @@
 const express = require('express');
-const profileController = require('../controllers/profileController');
+const { completeRegistration } = require('../controllers/profileController');
 const { validate } = require('../middlewares/validation');
 const { profileSchema } = require('../validators/profileSchema');
 const { checkProfileComplete } = require('../middlewares/checkProfile');
@@ -11,11 +11,9 @@ router.put(
   '/complete-profile',
   authenticate,
   validate(profileSchema),
-  profileController.completeRegistration
+  completeRegistration
 );
 
-router.get('/check-profile', authenticate, checkProfileComplete, (req, res) => {
-  res.status(200).json({ message: 'Perfil completo' });
-});
+router.get('/check-profile', authenticate, checkProfileComplete);
 
 module.exports = router;
