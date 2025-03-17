@@ -27,9 +27,24 @@ exports.register = async (user_type, name, last_name, email, password) => {
 
 exports.login = async (email, password) => {
   const user = await User.findOne({ where: { email } });
+  console.log('Login - Usuário encontrado:', user ? 'Sim' : 'Não');
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    console.log('Login - ID do usuário:', user.user_id);
     throw new Error('Invalid credentials');
   }
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+
+  console.log('Dados do usuário para token:', {
+    user_id: user.user_id,
+    email: user.email,
+  });
+
+  if (!user.user_id) {
+    throw new Error('User ID is undefined');
+  }
+
+  const token = jwt.sign({ user_id: user.user_id }, JWT_SECRET, {
+    expiresIn: '1h',
+  });
+  console.log('Login - Token gerado:', token);
   return token;
 };
