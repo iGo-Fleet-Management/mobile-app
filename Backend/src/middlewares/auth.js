@@ -27,11 +27,22 @@ exports.authenticate = async (req, res, next) => {
       });
     }
 
+    if (
+      decoded.reset_password &&
+      !req.originalUrl.includes('/reset-password')
+    ) {
+      return res.status(403).json({
+        code: 'PASSWORD_RESET_REQUIRED',
+        message: 'Necessário redefinir sua senha',
+      });
+    }
+
     // Adicionar o usuário à requisição para uso em outros middlewares
     req.user = {
       user_id: user.user_id,
       email: user.email,
       user_type: user.user_type,
+      reset_password: decoded.reset_password,
     };
 
     next();
