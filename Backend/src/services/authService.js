@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
 const validator = require('validator');
 
+// Serviço de registro de usuários
 exports.register = async (
   user_type,
   name,
@@ -12,27 +13,32 @@ exports.register = async (
   password,
   reset_password
 ) => {
-  // 1. Validação de formato e senha
+  // Validação de formato de email
   if (!validator.isEmail(email)) {
     throw new Error('Formato de email inválido');
   }
 
+  // Validação de tamanho da senha
   if (password.length < 8) {
     throw new Error('Senha deve ter no mínimo 8 caracteres');
   }
-  // 2. Verificação de email existente
+
+  // Verificação de email existente
   const existingUser = await User.findOne({
     where: {
       email: email,
     },
   });
-  // 3. Validação de duplicidade
+
+  // Validação de duplicidade
   if (existingUser) {
     throw new Error('Este email já está registrado');
   }
-  // 4. Criptografia da senha
+
+  // Criptografia da senha
   const password_hash = await bcrypt.hash(password, 10);
-  // 5. Criação do usuário
+
+  // Criação do usuário
   const user = await User.create({
     user_type,
     name,
@@ -41,28 +47,32 @@ exports.register = async (
     password_hash,
     reset_password,
   });
-  // 6. Retorno do usuário criado
+  // Retorno do usuário criado
   return {
     name: user.name,
     email: user.email,
   };
 };
 
+// Serviço de autenticação de usuários
 exports.login = async (email, password) => {
-  // 1. Busca o usuário pelo email no banco de dados
+  // Busca o usuário pelo email no banco de dados
   const user = await User.findOne({ where: { email } });
-  // 2. Verifica se o user existe
+
+  // Verifica se o user existe
   if (!user) {
     throw new Error('Usuário não encontrado');
   }
-  // 3. Compara a senha fornecida com o hash armazenado
+
+  // Compara a senha fornecida com o hash armazenado
   const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-  // 4. Validação da senha
+
+  // Validação da senha
   if (!isPasswordValid) {
     throw new Error('Invalid credentials');
   }
 
-  // 5. Geração do token JWT
+  // Geração do token JWT
   const token = jwt.sign(
     {
       user_id: user.user_id,
@@ -74,12 +84,13 @@ exports.login = async (email, password) => {
       expiresIn: '1h',
     }
   );
-  // 6. Retorno do token
+  // Retorno do token e status de reset de senha
   return { token, reset_password: user.reset_password };
 };
 
+// Serviço de reset de senha
 exports.resetPassword = async (email, currentPassword, newPassword) => {
-  // Validação inicial de inputs
+  // Validação de campos obrigatórios
   if (!email || !currentPassword || !newPassword) {
     throw new Error('Todos os campos são obrigatórios');
   }
@@ -101,17 +112,16 @@ exports.resetPassword = async (email, currentPassword, newPassword) => {
     throw new Error('Credenciais inválidas');
   }
 
-  // Verificação de senha
+  // Verificação de senha atual
   const isPasswordValid = await bcrypt.compare(
     currentPassword,
     user.password_hash
   );
-
   if (!isPasswordValid) {
     throw new Error('Credenciais inválidas');
   }
 
-  // Geração de novo hash
+  // Geração de hash da nova senha
   const password_hash = await bcrypt.hash(newPassword, 10);
 
   // Atualização no banco
@@ -123,6 +133,7 @@ exports.resetPassword = async (email, currentPassword, newPassword) => {
     { where: { user_id: user.user_id } }
   );
 
+  // Geração de novo token sem status de reset de senha
   const newToken = jwt.sign(
     {
       user_id: user.user_id,
@@ -134,6 +145,7 @@ exports.resetPassword = async (email, currentPassword, newPassword) => {
     }
   );
 
+  // Retorno de sucesso
   return {
     success: true,
     code: 'PASSWORD_UPDATED',

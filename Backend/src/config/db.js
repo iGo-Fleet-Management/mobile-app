@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Configuração para Neon (PostgreSQL com SSL)
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   protocol: 'postgres', // Especifica o protocolo (opcional, mas recomendado para Neon)

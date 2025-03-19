@@ -2,17 +2,19 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
 
+// Middleware de autenticação JWT
 exports.authenticate = async (req, res, next) => {
   try {
     // Obter o token do cabeçalho Authorization
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
-        code: 'UNAUTHORIZED',
+        code: 'MISSING_TOKEN',
         message: 'Token de autenticação não fornecido ou formato inválido',
       });
     }
 
+    // Extrai o token do cabeçalho
     const token = authHeader.split(' ')[1];
 
     // Verificar e decodificar o token
@@ -27,6 +29,7 @@ exports.authenticate = async (req, res, next) => {
       });
     }
 
+    // Verifica se a senha precisa ser resetada
     if (
       decoded.reset_password &&
       !req.originalUrl.includes('/reset-password')
@@ -45,8 +48,10 @@ exports.authenticate = async (req, res, next) => {
       reset_password: decoded.reset_password,
     };
 
+    // Passa para o próximo middleware/controller
     next();
   } catch (error) {
+    // Tratamento específico para erros de JWT
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         code: 'INVALID_TOKEN',
@@ -61,7 +66,7 @@ exports.authenticate = async (req, res, next) => {
       });
     }
 
-    console.error('Erro de autenticação:', error);
+    // 10. Erro genérico para casos inesperados
     res.status(500).json({
       code: 'SERVER_ERROR',
       message: 'Erro interno no servidor',

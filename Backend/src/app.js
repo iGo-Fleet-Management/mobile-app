@@ -5,15 +5,17 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const routes = require('./routes');
 
-dotenv.config();
+dotenv.config(); // Carrega variáveis de ambiente do arquivo .env
 
 const app = express();
 
-app.use(cors());
-app.use(helmet());
-app.use(morgan('dev'));
-app.use(express.json());
+// Middlewares essenciais para segurança e funcionamento básico
+app.use(cors()); // Habilita CORS para todas as rotas
+app.use(helmet()); // Adiciona headers de segurança
+app.use(morgan('dev')); // Logs de requisições no formato 'dev'
+app.use(express.json()); // Habilita parsing de JSON no body
 
+// Agrupa todas as rotas sob o path /api
 app.use('/api', routes);
 
 module.exports = app;
