@@ -9,34 +9,37 @@ exports.findUserByEmail = async (email) => {
   return await User.findOne({ where: { email } });
 };
 
+// Gerar código aleatório de 6 dígitos
+const generateResetCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // Ex: "123456"
+};
+
 // Função para gerar token de recuperação de senha
 exports.generatePasswordResetToken = async (email) => {
-  const { v4: uuidv4 } = require('uuid');
+  // Verifica se o usuário existe
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    throw new Error('Usuário não encontrado'); // Erro específico para controle interno
+  }
 
-  // Gera um identificador único para este token
-  const tokenId = uuidv4();
-
-  // Define quando o token expira (1 hora)
-  const expiresIn = '1h';
+  const resetCode = generateResetCode();
 
   // Gera o token JWT
   const token = jwt.sign(
     {
       email,
-      purpose: 'password-reset', // Propósito específico do token
-      jti: tokenId, // JWT ID - identificador único
+      code: resetCode,
+      purpose: 'password-reset',
     },
     JWT_SECRET,
-    { expiresIn }
+    { expiresIn: '10m' } // Código válido por 10 minutos
   );
 
-  console.log('Token para reset', token);
-
-  return token;
+  return { resetCode, token };
 };
 
 // Função para redefinir senha usando token
-exports.resetPasswordWithToken = async (token, newPassword) => {
+exports.resetPasswordWithToken = async (token, userCode, newPassword) => {
   try {
     // Verifica e decodifica o token
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -44,6 +47,11 @@ exports.resetPasswordWithToken = async (token, newPassword) => {
     // Verifica se o token tem o propósito correto
     if (decoded.purpose !== 'password-reset') {
       throw new Error('Token inválido');
+    }
+
+    // Verifica se o código está propósito correto
+    if (decoded.code !== userCode) {
+      throw new Error('Código inválido');
     }
 
     // Extrai o email do payload

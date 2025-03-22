@@ -14,6 +14,16 @@ exports.resetPasswordWithTokenSchema = Joi.object({
     'any.required': 'Token é obrigatório',
   }),
 
+  code: Joi.string()
+    .length(6)
+    .pattern(/^\d+$/) // Apenas dígitos numéricos
+    .required()
+    .messages({
+      'string.length': 'Código deve ter exatamente 6 dígitos',
+      'string.pattern.base': 'Códivo deve conter apenas números',
+      'any.required': 'Código é obrigatório',
+    }),
+
   newPassword: Joi.string()
     .min(8)
     .pattern(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)

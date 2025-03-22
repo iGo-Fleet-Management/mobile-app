@@ -9,17 +9,14 @@ exports.requestPasswordReset = async (req, res) => {
     // Busca o usuário pelo email
     const user = await forgotPasswordService.findUserByEmail(email);
 
+    // Gera token JWT para recuperação de senha
+    const { resetCode, token } =
+      await forgotPasswordService.generatePasswordResetToken(email);
+
     // Se o usuário existir, gera token e envia email
     if (user) {
-      // Gera token JWT para recuperação de senha
-      const resetToken =
-        await forgotPasswordService.generatePasswordResetToken(email);
-
-      // Configuração do link de recuperação (frontend URL)
-      const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
       // Envia email com o link de recuperação
-      await emailService.sendPasswordResetEmail(email, resetLink);
+      await emailService.sendPasswordResetEmail(email, resetCode);
     }
 
     // Retorna sempre sucesso (mesmo se email não existir, por segurança)
@@ -28,8 +25,17 @@ exports.requestPasswordReset = async (req, res) => {
       success: true,
       message:
         'Se o email estiver cadastrado, você receberá as instruções para redefinição de senha.',
+      token,
     });
   } catch (error) {
+    if (error.message === 'Usuário não encontrado') {
+      // Mantém a resposta genérica por segurança
+      return res.status(200).json({
+        success: true,
+        message:
+          'Se o e-mail estiver cadastrado, você receberá um código de verificação.',
+      });
+    }
     console.error('Erro ao solicitar recuperação de senha:', error);
     res.status(500).json({
       code: 'SERVER_ERROR',
@@ -41,11 +47,12 @@ exports.requestPasswordReset = async (req, res) => {
 // Controlador para redefinir senha com token
 exports.resetPasswordWithToken = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { token, code, newPassword } = req.body;
 
     // Redefine a senha usando o token
     const result = await forgotPasswordService.resetPasswordWithToken(
       token,
+      code,
       newPassword
     );
 

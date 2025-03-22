@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-exports.sendPasswordResetEmail = async (recipientEmail, resetLink) => {
+exports.sendPasswordResetEmail = async (recipientEmail, resetCode) => {
   try {
     const mailOptions = {
       from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
@@ -20,13 +20,8 @@ exports.sendPasswordResetEmail = async (recipientEmail, resetLink) => {
       html: `
           <div>
             <h2>Recuperação de Senha</h2>
-            <p>Você solicitou a recuperação de senha para sua conta.</p>
-            <p>Clique no link abaixo para redefinir sua senha:</p>
-            <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
-              Redefinir Senha
-            </a>
-            <p>Este link é válido por 1 hora.</p>
-            <p>Se você não solicitou esta recuperação, ignore este email.</p>
+            <p>Seu código de verificação é: <strong>${resetCode}</strong></p>
+            <p>Código válido por 10 minutos.</p>
           </div>
         `,
     };
