@@ -89,7 +89,11 @@ exports.login = async (email, password) => {
 };
 
 // Serviço de reset de senha
-exports.resetPassword = async (email, currentPassword, newPassword) => {
+exports.resetPasswordFirstLogin = async (
+  email,
+  currentPassword,
+  newPassword
+) => {
   // Validação de campos obrigatórios
   if (!email || !currentPassword || !newPassword) {
     throw new Error('Todos os campos são obrigatórios');

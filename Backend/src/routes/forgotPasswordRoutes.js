@@ -1,0 +1,23 @@
+const express = require('express');
+const forgotPasswordController = require('../controllers/forgotPasswordController');
+const { validate } = require('../middlewares/validation');
+const {
+  forgotPasswordSchema,
+  resetPasswordWithTokenSchema,
+} = require('../validators/forgotPasswordSchema');
+
+const router = express.Router();
+
+router.post(
+  '/forgot-password',
+  validate(forgotPasswordSchema),
+  forgotPasswordController.requestPasswordReset
+);
+
+router.post(
+  '/reset-password-token',
+  validate(resetPasswordWithTokenSchema),
+  forgotPasswordController.resetPasswordWithToken
+);
+
+module.exports = router;

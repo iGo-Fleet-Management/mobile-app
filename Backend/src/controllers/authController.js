@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
 };
 
 // Controlador para alteração de senha
-exports.resetPassword = async (req, res) => {
+exports.resetPasswordFirstLogin = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const { email } = req.user; // Pegamos o email do Usuário autenticado via middleware
@@ -67,7 +67,7 @@ exports.resetPassword = async (req, res) => {
     }
 
     // Chama serviço de alteração de senha
-    const reset = await authService.resetPassword(
+    const reset = await authService.resetPasswordFirstLogin(
       email,
       currentPassword,
       newPassword
