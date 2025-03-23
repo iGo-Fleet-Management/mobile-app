@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const TokenBlacklist = require('../models/TokenBlacklist');
 
 // Controlador para registro de usuários
 exports.register = async (req, res) => {
@@ -49,5 +50,32 @@ exports.login = async (req, res) => {
   } catch (error) {
     // Erro genérico de autenticação
     res.status(401).json({ error: error.message }); // 401 Unauthorized
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Formato de autorização inválido. Use: Bearer <token>',
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    await authService.logout(token);
+
+    res.status(200).json({
+      success: true,
+      message: 'Logout realizado com sucesso',
+    });
+  } catch (error) {
+    console.error('Erro no logout:', error);
+    const statusCode = error.message.includes('jwt') ? 401 : 500;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message,
+    });
   }
 };

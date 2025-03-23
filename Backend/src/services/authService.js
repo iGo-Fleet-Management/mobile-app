@@ -1,8 +1,10 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 const { JWT_SECRET } = require('../config/jwt');
+const User = require('../models/User');
+const TokenBlacklist = require('../models/TokenBlacklist');
 const validator = require('validator');
+const { Sequelize } = require('sequelize');
 
 // Serviço de registro de usuários
 exports.register = async (
@@ -86,4 +88,53 @@ exports.login = async (email, password) => {
   );
   // Retorno do token e status de reset de senha
   return { token, reset_password: user.reset_password };
+};
+
+exports.logout = async (token) => {
+  try {
+    if (!token) {
+      throw new Error('Token não fornecido');
+    }
+
+    const decoded = jwt.decode(token);
+
+    if (!decoded || !decoded.exp) {
+      throw new Error('Token inválido ou malformado');
+    }
+
+    // Calcula a data de expiração do token
+    const expiresAt = new Date(decoded.exp * 1000);
+    console.log('Data de expiração:', expiresAt);
+
+    // Adiciona token à blacklist
+    await TokenBlacklist.create({
+      token,
+      expires_at: expiresAt,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erro no serviço de logout:', error);
+    throw new Error('Falha ao processar logout');
+  }
+};
+
+exports.isTokenRevoked = async (token) => {
+  const blacklistedToken = await TokenBlacklist.findOne({ where: { token } });
+  return !!blacklistedToken;
+};
+
+exports.cleanupExpiredTokens = async () => {
+  try {
+    const result = await TokenBlacklist.destroy({
+      where: {
+        expires_at: { [Sequelize.Op.lt]: new Date() },
+      },
+    });
+    console.log(`Tokens expirados removidos: ${result}`);
+    return result;
+  } catch (error) {
+    console.error('Erro ao limpar tokens:', error);
+    throw new Error('Falha na limpeza de tokens');
+  }
 };

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { isTokenRevoked } = require('../services/authService');
 const { JWT_SECRET } = require('../config/jwt');
 
 // Middleware de autenticação JWT
@@ -17,6 +18,13 @@ exports.authenticate = async (req, res, next) => {
     // Extrai o token do cabeçalho
     const token = authHeader.split(' ')[1];
 
+    const isRevoked = await isTokenRevoked(token);
+    if (isRevoked) {
+      return res.status(401).json({
+        code: 'TOKEN_REVOKED',
+        message: 'Este token foi invalidado',
+      });
+    }
     // Verificar e decodificar o token
     const decoded = jwt.verify(token, JWT_SECRET);
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const forgotPasswordController = require('../controllers/forgotPasswordController');
-const { validate } = require('../middlewares/validation');
+const { validate } = require('../middlewares/validationMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 const {
   forgotPasswordSchema,
