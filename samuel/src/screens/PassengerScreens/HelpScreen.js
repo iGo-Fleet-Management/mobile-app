@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Header from '../components/common/Header';
-import HelpItem from '../components/help/HelpItem';
-import ContactSection from '../components/help/ContactSection';
+import Header from '../../components/common/Header';
+import HelpItem from '../../components/help/HelpItem';
+import ContactSection from '../../components/help/ContactSection';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HelpScreen = ({ navigation }) => {
@@ -11,7 +11,7 @@ const HelpScreen = ({ navigation }) => {
     <View style={styles.helpContainer}>
       <Header 
         title="Central de Ajuda" 
-        onMenuPress={() => navigation.openDrawer()} 
+        onArrowBackPress={() => navigation.goBack()} 
       />
       
       <View style={styles.helpCard}>

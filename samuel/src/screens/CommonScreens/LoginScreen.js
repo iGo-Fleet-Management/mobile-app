@@ -24,15 +24,22 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
+    if (email === 'passenger@gmail.com'){
+      navigation.navigate('PassengerHomeScreen');
+    }
+
+    if (email === 'driver@gmail.com'){
+      navigation.navigate('DriverHomeScreen');
+    }
+
     // Navigate to Main instead of Dashboard
-    navigation.navigate('Main');
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image
-          source={require('../../assets/images/Logo iGo.png')}
+          source={require('../../../assets/images/Logo iGo.png')}
           style={styles.logo}
           resizeMode="contain"
         />

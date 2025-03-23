@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import LogoutConfirmation from '../components/common/Logout';
+import LogoutConfirmation from '../../components/common/Logout';
 
 const PassengerProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState({

@@ -4,16 +4,16 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 const Header = ({ 
   title, 
-  onMenuPress, 
+  onArrowBackPress, 
   rightIcon, 
   onRightIconPress,
   style 
 }) => {
   return (
     <View style={[styles.header, style]}>
-      {onMenuPress && (
-        <TouchableOpacity onPress={onMenuPress}>
-          <MaterialIcons name="menu" size={28} color="black" />
+      {onArrowBackPress && (
+        <TouchableOpacity onPress={onArrowBackPress}>
+          <MaterialIcons name="chevron-left" size={28} color="black" />
         </TouchableOpacity>
       )}
       <Text style={styles.title}>{title}</Text>

@@ -14,7 +14,7 @@ const AlertBox = ({
       <Text style={styles.alertText}>{message}</Text>
       {onEditPress && (
         <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
-          <MaterialIcons name="edit" size={20} color="black" />
+          <MaterialIcons name="error-outline" size={20} color="black" />
         </TouchableOpacity>
       )}
     </View>

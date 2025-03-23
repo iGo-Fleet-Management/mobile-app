@@ -3,17 +3,21 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 
 // Import Auth Screens
-import LoginScreen from '../screens/LoginScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import SignUpScreen from '../screens/SignUpScreen';
-import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import LoginScreen from '../screens/CommonScreens/LoginScreen';
+import ForgotPasswordScreen from '../screens/CommonScreens/ForgotPasswordScreen';
+import SignUpScreen from '../screens/CommonScreens/SignUpScreen';
+import ResetPasswordScreen from '../screens/CommonScreens/ResetPasswordScreen';
 
-import PassengerProfileScreen from '../screens/PassengerProfileScreen';
-import EditProfileScreen from '../screens/EditProfileScreen';
-import EditAddressesScreen from '../screens/EditAddressesScreen';
+import PassengerProfileScreen from '../screens/PassengerScreens/PassengerProfileScreen';
+import EditProfileScreen from '../screens/CommonScreens/EditProfileScreen';
+import EditAddressesScreen from '../screens/CommonScreens/EditAddressesScreen';
+import PassengerHomeScreen from '../screens/PassengerScreens/PassengerHomeScreen';
+
+import HelpScreen from '../screens/PassengerScreens/HelpScreen';
+
 
 // Import Drawer Navigator for main app
-import DrawerNavigator from './DrawerNavigator';
+import BottomTab from './BottomTabNavigator';
 
 const Stack = createStackNavigator();
 
@@ -31,9 +35,6 @@ const StackNavigator = () => {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-        
-        {/* Main App */}
-        <Stack.Screen name="Main" component={DrawerNavigator} />
 
         {/* Profile Screens - These will slide in from the right */}
         <Stack.Screen 
@@ -57,6 +58,13 @@ const StackNavigator = () => {
             presentation: 'card',
           }}
         />
+
+        {/* PassengerHomeScrenn */}
+        <Stack.Screen name="PassengerHomeScreen" component={PassengerHomeScreen} />
+        <Stack.Screen name="Ajuda" component={HelpScreen} />
+        {/* DriverHomeScrenn */}
+        <Stack.Screen name="DriverHomeScreen" component={BottomTab} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

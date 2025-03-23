@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import UserIcon from '../components/common/UserIcon';
+import UserIcon from '../../components/common/UserIcon';
 
 // Components
-import Header from '../components/common/Header';
-import TravelModeSelector from '../components/home/TravelModeSelector';
-import StatusSwitch from '../components/home/StatusSwitch';
-import AlertBox from '../components/home/AlertBox';
-import MapContainer from '../components/home/MapContainer';
-import BottomUserBar from '../components/home/BottomUserBar';
-
-// Assets
-import MapImage from '../../assets/images/google-map-example-blog.png';
-
+import Header from '../../components/common/Header';
 
 export default function HomeScreen({ navigation }) {
   const [travelMode, setTravelMode] = useState('roundTrip');
@@ -29,7 +20,6 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerContainer}>
           <Header 
             title="iGO" 
-            onMenuPress={() => navigation.openDrawer()} 
           />
           <View style={styles.userIconWrapper}>
             <UserIcon onPress={handleUserIconPress} userName="John" />
@@ -37,33 +27,9 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.dateCard}>
-          <Text style={styles.dayOfWeek}>Segunda-Feira</Text>
-          <Text style={styles.date}>27 de Novembro de 2023</Text>
-          
-          <TravelModeSelector 
-            selectedMode={travelMode}
-            onSelectMode={setTravelMode}
-          />
+          <Text style={styles.dayOfWeek}>Tela Motorista</Text>
+          <Text style={styles.date}>Falta implementar</Text>
         </View>
-
-        <StatusSwitch 
-          value={isLiberado}
-          onValueChange={setIsLiberado}
-          onHelpPress={() => navigation.navigate('Ajuda')}
-        />
-
-        <AlertBox 
-          message="Seu motorista já iniciou o trajeto. Fique atento!"
-          onEditPress={() => {/* Handle edit */}}
-        />
-
-        <MapContainer 
-          source={MapImage}
-        />
-
-        <BottomUserBar 
-          userName="John Doe"
-        />
       </View>
     </SafeAreaView>
   );

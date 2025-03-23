@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Header from '../components/common/Header';
+import Header from '../../components/common/Header';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,7 +10,7 @@ const AboutScreen = ({ navigation }) => {
     <View style={styles.aboutContainer}>
       <Header 
         title="Sobre o iGO" 
-        onMenuPress={() => navigation.openDrawer()} 
+        onArrowBackPress={() => navigation.goBack()}  
       />
       
       <View style={styles.aboutCard}>

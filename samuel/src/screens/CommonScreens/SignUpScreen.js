@@ -148,7 +148,13 @@ export default function SignUpScreen({ navigation }) {
       <TouchableOpacity style={styles.button} onPress={handleSignUp}>
         <Text style={styles.buttonText}>Criar Conta</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigation.goBack()}>
+        <Text style={styles.link}>Voltar para o login</Text>
+      </TouchableOpacity>
+
     </View>
+    
   );
 }
 
@@ -186,5 +192,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     fontSize: 18,
+  },
+  link: {
+    color: '#007BFF',
+    marginTop: 10,
   },
 });

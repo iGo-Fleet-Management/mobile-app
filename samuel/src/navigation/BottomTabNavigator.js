@@ -3,14 +3,15 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 
 // Import Screens
-import HomeScreen from '../screens/HomeScreen';
-import PassengersScreen from '../screens/PassengersScreen';
+import DriverHomeScreen from '../screens/DriverScreens/DriverHomeScreen';
+import PassengersScreen from '../screens/DriverScreens/PassengersScreen';
 
 const BottomTab = createBottomTabNavigator();
 
 const BottomTabNavigator = () => {
   return (
     <BottomTab.Navigator
+      initialRouteName="Início"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
@@ -30,11 +31,11 @@ const BottomTabNavigator = () => {
     >
       <BottomTab.Screen 
         name="Início" 
-        component={HomeScreen} 
+        component={DriverHomeScreen} 
       />
-      <BottomTab.Screen 
-        name="Passageiros" 
-        component={PassengersScreen} 
+      <BottomTab.Screen
+        name='Passageiros'
+        component={PassengersScreen}
       />
     </BottomTab.Navigator>
   );

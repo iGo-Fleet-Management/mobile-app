@@ -3,10 +3,10 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import components
-import Header from '../components/common/Header';
-import SearchBar from '../components/common/SearchBar';
-import PassengerItem from '../components/passengers/PassengerItem';
-import AddPassengerButton from '../components/passengers/AddPassengerButton';
+import Header from '../../components/common/Header';
+import SearchBar from '../../components/common/SearchBar';
+import PassengerItem from '../../components/passengers/PassengerItem';
+import AddPassengerButton from '../../components/passengers/AddPassengerButton';
 
 const passageiros = [
   { id: 1, name: 'Hugo de Melo Carvalho', avatar: null },
@@ -29,7 +29,6 @@ export default function PassengersScreen({ navigation }) {
     <View style={styles.container}>
       <Header 
         title="Passageiros" 
-        onMenuPress={() => navigation.openDrawer()} 
       />
 
       <SearchBar 
