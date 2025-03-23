@@ -1,6 +1,7 @@
 const express = require('express');
 const forgotPasswordController = require('../controllers/forgotPasswordController');
 const { validate } = require('../middlewares/validation');
+const authMiddleware = require('../middlewares/authMiddleware');
 const {
   forgotPasswordSchema,
   resetPasswordWithTokenSchema,
@@ -18,6 +19,13 @@ router.post(
   '/reset-password-token',
   validate(resetPasswordWithTokenSchema),
   forgotPasswordController.resetPasswordWithToken
+);
+
+// Rota para resetar senha no primeiro login (requer autenticação)
+router.post(
+  '/reset-password',
+  authMiddleware.authenticate,
+  forgotPasswordController.resetPasswordFirstLogin
 );
 
 module.exports = router;

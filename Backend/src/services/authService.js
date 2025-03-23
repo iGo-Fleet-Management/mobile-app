@@ -61,7 +61,7 @@ exports.login = async (email, password) => {
 
   // Verifica se o user existe
   if (!user) {
-    throw new Error('Usuário não encontrado');
+    throw new Error('Credenciais invalidas');
   }
 
   // Compara a senha fornecida com o hash armazenado
@@ -69,7 +69,7 @@ exports.login = async (email, password) => {
 
   // Validação da senha
   if (!isPasswordValid) {
-    throw new Error('Invalid credentials');
+    throw new Error('Credenciais inválidas');
   }
 
   // Geração do token JWT
@@ -86,74 +86,4 @@ exports.login = async (email, password) => {
   );
   // Retorno do token e status de reset de senha
   return { token, reset_password: user.reset_password };
-};
-
-// Serviço de reset de senha
-exports.resetPasswordFirstLogin = async (
-  email,
-  currentPassword,
-  newPassword
-) => {
-  // Validação de campos obrigatórios
-  if (!email || !currentPassword || !newPassword) {
-    throw new Error('Todos os campos são obrigatórios');
-  }
-
-  // Validação da força da senha antes de operações de banco
-  if (!validator.isStrongPassword(newPassword)) {
-    throw new Error('Senha deve ter 8+ caracteres com números e símbolos');
-  }
-
-  // Verificação se senhas são iguais
-  if (currentPassword === newPassword) {
-    throw new Error('A nova senha não pode ser igual a atual');
-  }
-
-  // Busca de usuário
-  const user = await User.findOne({ where: { email } });
-
-  if (!user) {
-    throw new Error('Credenciais inválidas');
-  }
-
-  // Verificação de senha atual
-  const isPasswordValid = await bcrypt.compare(
-    currentPassword,
-    user.password_hash
-  );
-  if (!isPasswordValid) {
-    throw new Error('Credenciais inválidas');
-  }
-
-  // Geração de hash da nova senha
-  const password_hash = await bcrypt.hash(newPassword, 10);
-
-  // Atualização no banco
-  await User.update(
-    {
-      password_hash: password_hash,
-      reset_password: false,
-    },
-    { where: { user_id: user.user_id } }
-  );
-
-  // Geração de novo token sem status de reset de senha
-  const newToken = jwt.sign(
-    {
-      user_id: user.user_id,
-      user_type: user.user_type,
-    },
-    JWT_SECRET,
-    {
-      expiresIn: '1h',
-    }
-  );
-
-  // Retorno de sucesso
-  return {
-    success: true,
-    code: 'PASSWORD_UPDATED',
-    message: 'Senha atualizada com sucesso',
-    token: newToken,
-  };
 };

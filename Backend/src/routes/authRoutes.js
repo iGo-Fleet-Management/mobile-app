@@ -1,6 +1,5 @@
 const express = require('express');
 const authController = require('../controllers/authController');
-const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -9,12 +8,5 @@ router.post('/register', authController.register);
 
 // Rota de login
 router.post('/login', authController.login);
-
-// Rota para resetar senha no primeiro login (requer autenticação)
-router.post(
-  '/reset-password',
-  authMiddleware.authenticate,
-  authController.resetPasswordFirstLogin
-);
 
 module.exports = router;

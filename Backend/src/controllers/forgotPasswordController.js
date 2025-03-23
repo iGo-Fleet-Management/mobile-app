@@ -93,3 +93,45 @@ exports.resetPasswordWithToken = async (req, res) => {
     });
   }
 };
+
+// Controlador para alteração de senha
+exports.resetPasswordFirstLogin = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const { email } = req.user; // Pegamos o email do Usuário autenticado via middleware
+
+    // Validação de campos obrigatórios
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        code: 'MISSING_FIELDS',
+        error: 'Campos obrigatórios faltando',
+      }); // 400 Bad Request
+    }
+
+    console.log('Alterando senha para:', email);
+    console.log('SenhaAtual:', currentPassword);
+    console.log('NovaSenha:', newPassword);
+
+    // Chama serviço de alteração de senha
+    const reset = await forgotPasswordService.resetPasswordFirstLogin(
+      email,
+      currentPassword,
+      newPassword
+    );
+
+    // Retorno do resultado
+    return res.status(200).json(reset);
+  } catch (error) {
+    // Tipos específicos de erros
+    if (error.messages === 'Credenciais inválidas') {
+      return res.status(401).json({ error: 'Credenciais inválidas' }); // 401 Unauthorized
+    } else if (
+      error.message ===
+      'Senha deve ter Senha deve ter 8+ caracteres com números e símbolos'
+    ) {
+      return res.status(400).json({ error: error.message }); // 400 Bad Request
+    } else {
+      return res.status(500).json({ error: 'Erro ao processar solicitação' }); // Mensagem genérica para outros erros
+    }
+  }
+};
