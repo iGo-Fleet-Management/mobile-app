@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import HomeScreen from '../src/screens/HomeScreen';
+import HomeScreen from '../HomeScreen';
 
 // Mock the dependencies
 jest.mock('react-native-safe-area-context', () => ({
@@ -8,13 +8,13 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 // Mock the components
-jest.mock('../components/common/Header', () => 'Header');
-jest.mock('../components/common/UserIcon', () => 'UserIcon');
-jest.mock('../components/home/TravelModeSelector', () => 'TravelModeSelector');
-jest.mock('../components/home/StatusSwitch', () => 'StatusSwitch');
-jest.mock('../components/home/AlertBox', () => 'AlertBox');
-jest.mock('../components/home/MapContainer', () => 'MapContainer');
-jest.mock('../components/home/BottomUserBar', () => 'BottomUserBar');
+jest.mock('../../components/common/Header', () => 'Header');
+jest.mock('../../components/common/UserIcon', () => 'UserIcon');
+jest.mock('../../components/home/TravelModeSelector', () => 'TravelModeSelector');
+jest.mock('../../components/home/StatusSwitch', () => 'StatusSwitch');
+jest.mock('../../components/home/AlertBox', () => 'AlertBox');
+jest.mock('../../components/home/MapContainer', () => 'MapContainer');
+jest.mock('../../components/home/BottomUserBar', () => 'BottomUserBar');
 
 // Mock the navigation
 const mockNavigation = {
@@ -23,7 +23,7 @@ const mockNavigation = {
 };
 
 // Mock the image require
-jest.mock('../../assets/images/google-map-example-blog.png', () => 'mockedMapImagePath');
+jest.mock('../../../assets/images/google-map-example-blog.png', () => 'mockedMapImagePath');
 
 describe('HomeScreen', () => {
   beforeEach(() => {
