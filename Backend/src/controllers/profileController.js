@@ -26,3 +26,33 @@ exports.completeRegistration = async (req, res) => {
     });
   }
 };
+
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await userService.getProfileById(req.user.user_id);
+    res.status(200).json({ 'perfil encontrado': user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { userData, addressUpdates } = req.body;
+
+    const result = await userService.updateProfile(
+      req.user.user_id,
+      userData || {},
+      addressUpdates || []
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Perfil atualizado com sucesso',
+      user: result.user,
+    });
+  } catch (error) {
+    const statusCode = error.message.includes('não encontrado') ? 404 : 500;
+    res.status(statusCode).json({ success: false, message: error.message });
+  }
+};

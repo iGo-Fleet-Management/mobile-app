@@ -60,6 +60,7 @@ const Address = sequelize.define(
 Address.associate = (models) => {
   Address.belongsTo(models.User, {
     foreignKey: 'user_id',
+    as: 'user',
     onDelete: 'CASCADE', // Reflete o ON DELETE CASCADE do SQL
   });
 };

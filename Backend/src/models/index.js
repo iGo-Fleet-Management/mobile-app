@@ -1,0 +1,23 @@
+const { Sequelize } = require('sequelize');
+const sequelize = require('../config/db');
+
+// Importar modelos
+const User = require('./User');
+const Address = require('./Address');
+
+// Criar objeto de modelos
+const models = {
+  User,
+  Address,
+  sequelize,
+  Sequelize,
+};
+
+// Configurar associações
+Object.keys(models).forEach((modelName) => {
+  if (models[modelName].associate) {
+    models[modelName].associate(models);
+  }
+});
+
+module.exports = models;
