@@ -1,4 +1,5 @@
 const sequelize = require('../config/db');
+const UserRepository = require('../repositories/userRepository');
 const { User, Address } = require('../models');
 
 // Serviço para completar o perfil do usuário
@@ -8,33 +9,22 @@ exports.completeProfile = async (user_id, userData, addressData) => {
 
   try {
     // Atualiza os dados do usuário
-    const [updatedRows] = await User.update(userData, {
-      where: { user_id: user_id },
-      returning: true, // Retorna os dados atualizados
-      transaction, // Associa a transação
-    });
+    const user = await UserRepository.update(user_id, userData, transaction);
 
     // Cria o endereço do usuário
     const address = await Address.create(
       {
-        address_type: addressData.address_type,
-        cep: addressData.cep,
-        street: addressData.street,
-        number: addressData.number,
-        complement: addressData.complement || null, // Campo opcional
-        neighbourhood: addressData.neighbourhood,
-        city: addressData.city,
-        state: addressData.state,
-        user_id: user_id, // Chave estrangeira
+        ...addressData,
+        user_id,
       },
-      { transaction } // Associa a transação
+      { transaction }
     );
 
     // Confirma a transação
     await transaction.commit();
 
     //Retorna os dados atualizados
-    return { user: updatedRows[0], address };
+    return { user, address };
   } catch (error) {
     // Em caso de erro, reverte a transação
     await transaction.rollback();
@@ -51,16 +41,7 @@ exports.getProfileById = async (user_id) => {
   }
 
   try {
-    const user = await User.findByPk(user_id, {
-      include: [
-        {
-          model: Address,
-          as: 'addresses',
-          attributes: { exclude: ['user_id'] },
-        },
-      ],
-      attributes: { exclude: ['password_hash', 'reset_password'] },
-    });
+    const user = await UserRepository.findById(user_id);
 
     if (!user) {
       throw new Error('Usuário não encontrado');
@@ -79,14 +60,12 @@ exports.updateProfile = async (user_id, userData, addressUpdates) => {
 
   try {
     // Atualização do usuário
-    const user = await User.findByPk(user_id, { transaction });
-    if (!user) throw new Error('Usuário não encontrado');
+    const existingUser = await UserRepository.findById(user_id);
+    if (!existingUser) throw new Error('Usuario não encontrado');
 
+    let user = existingUser;
     if (userData && Object.keys(userData).length > 0) {
-      await User.update(userData, {
-        where: { user_id },
-        transaction,
-      });
+      user = await UserRepository.update(user_id, userData);
     }
 
     // Nova lógica para endereços (1:N)
@@ -122,20 +101,10 @@ exports.updateProfile = async (user_id, userData, addressUpdates) => {
       }
     }
 
-    // Busca dados atualizados ANTES do commit (dentro da transação)
-    const updatedUser = await User.findByPk(user_id, {
-      attributes: { exclude: ['password_hash'] },
-      include: [
-        {
-          model: Address,
-          as: 'addresses',
-          attributes: { exclude: ['user_id'] },
-        },
-      ],
-      transaction,
-    });
-
     await transaction.commit();
+
+    // Busca dados atualizados ANTES do commit (dentro da transação)
+    const updatedUser = await UserRepository.findById(user_id);
 
     return {
       user: updatedUser,
@@ -144,4 +113,8 @@ exports.updateProfile = async (user_id, userData, addressUpdates) => {
     await transaction.rollback();
     throw new Error(`Erro na atualização: ${error.message}`);
   }
+};
+
+exports.isProfileComplete = async (user_id) => {
+  return UserRepository.isProfileComplete(user_id);
 };

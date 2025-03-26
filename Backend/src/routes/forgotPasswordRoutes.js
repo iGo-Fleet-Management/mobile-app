@@ -5,7 +5,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const {
   forgotPasswordSchema,
   resetPasswordWithTokenSchema,
-} = require('../validators/forgotPasswordSchema');
+} = require('../validators/forgotPasswordValidation');
 
 const router = express.Router();
 

@@ -4,7 +4,7 @@ const eslintConfigPrettier = require('eslint-config-prettier');
 module.exports = [
   {
     languageOptions: {
-      ecmaVersion: 2021,
+      ecmaVersion: 2022,
       sourceType: 'module',
       globals: {
         node: true,
@@ -14,9 +14,13 @@ module.exports = [
       prettier: eslintPluginPrettier, // Plugin do Prettier
     },
     rules: {
-      // Regras personalizadas (opcional)
-      'prettier/prettier': 'error', // Habilita o Prettier como regra do ESLint
-    },
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'lf' // Força estilo Unix
+        }
+      ]
+    }
   },
   eslintConfigPrettier, // Desativa regras do ESLint que conflitam com o Prettier
 ];

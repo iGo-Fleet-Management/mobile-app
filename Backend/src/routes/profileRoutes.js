@@ -1,30 +1,31 @@
 const express = require('express');
 const profileController = require('../controllers/profileController');
+// Importação dos novos validadores
+const userValidation = require('../validators/userValidation');
 const { validate } = require('../middlewares/validationMiddleware');
-const {
-  updateProfileSchema,
-  profileSchema,
-} = require('../validators/profileSchema');
-const { checkProfileComplete } = require('../middlewares/profileMiddleware');
 const { authenticate } = require('../middlewares/authMiddleware');
+const { checkProfileComplete } = require('../middlewares/profileMiddleware');
 
 const router = express.Router();
 
 router.use(authenticate);
 
-// Rota para completar o cadastro do perfil
+// Atualização para usar o novo schema de validação
 router.put(
   '/complete-profile',
-  validate(profileSchema),
+  validate(userValidation.completeProfileSchema()),
   profileController.completeRegistration
 );
 
-// Rota para verificar se o perfil está completo
-router.get('/check-profile', checkProfileComplete);
+// Rota de atualização de perfil usando novo schema
+router.put(
+  '/',
+  validate(userValidation.updateProfileSchema()),
+  profileController.updateProfile
+);
 
-// Rota para obter o perfil do usuário
+// Demais rotas permanecem iguais
+router.get('/check-profile', checkProfileComplete);
 router.get('/', profileController.getProfile);
-// Rota para alterar o perfil do usuário
-router.put('/', validate(updateProfileSchema), profileController.updateProfile);
 
 module.exports = router;
