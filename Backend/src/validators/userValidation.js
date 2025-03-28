@@ -14,32 +14,25 @@ const userValidation = {
    */
   completeProfileSchema: () =>
     Joi.object({
-      cpf: commonValidations
-        .createNumericValidator(11, 'CPF')
-        .required()
-        .messages({
-          'any.required': 'CPF é obrigatório',
+      userData: Joi.object({
+        cpf: commonValidations
+          .createNumericValidator(11, 'CPF')
+          .required()
+          .messages({
+            'any.required': 'CPF é obrigatório',
+          }),
+
+        birthdate: Joi.date().max('now').iso().required().messages({
+          'date.max': 'Data de nascimento não pode ser futura',
+          'any.required': 'Data de nascimento é obrigatória',
         }),
 
-      birthdate: Joi.date().max('now').iso().required().messages({
-        'date.max': 'Data de nascimento não pode ser futura',
-        'any.required': 'Data de nascimento é obrigatória',
-      }),
+        phone: commonValidations.phoneValidator().required().messages({
+          'any.required': 'Telefone é obrigatório',
+        }),
+      }).required(),
 
-      phone: commonValidations.phoneValidator().required().messages({
-        'any.required': 'Telefone é obrigatório',
-      }),
-
-      email: commonValidations.emailValidator().required().messages({
-        'any.required': 'Email é obrigatório',
-      }),
-
-      name: Joi.string().min(2).required().messages({
-        'any.required': 'Nome é obrigatório',
-        'string.min': 'Nome deve ter no mínimo 2 caracteres',
-      }),
-
-      address: addressValidation.createSchema().required(),
+      addressUpdates: addressValidation.createSchema().required(),
     }),
 
   /**
@@ -55,7 +48,9 @@ const userValidation = {
         birthdate: Joi.date().max('now').iso().optional(),
         phone: commonValidations.phoneValidator().optional(),
         email: commonValidations.emailValidator().optional(),
-      }).min(1),
+      })
+        .allow({}, null)
+        .optional(),
 
       addressUpdates: Joi.array()
         .items(

@@ -1,156 +1,183 @@
+// src/services/forgotPasswordService.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { JWT_SECRET } = require('../config/jwt');
 const validator = require('validator');
+const { JWT_SECRET } = require('../config/jwt');
+const UserRepository = require('../repositories/userRepository');
+const TokenBlacklistRepository = require('../repositories/tokenBlacklistRepository');
+const emailService = require('./emailService');
 
-// Função para buscar usuário pelo email
-exports.findUserByEmail = async (email) => {
-  return await User.findOne({ where: { email } });
-};
+// Gerar código numérico de 6 dígitos
+const generateResetCode = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
 
-// Gerar código aleatório de 6 dígitos
-const generateResetCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // Ex: "123456"
-};
+exports.requestPasswordReset = async (email) => {
+  try {
+    const user = await UserRepository.findByEmail(email);
+    if (!user) return { sent: false }; // Não revela se o email existe
 
-// Função para gerar token de recuperação de senha
-exports.generatePasswordResetToken = async (email) => {
-  // Verifica se o usuário existe
-  const user = await User.findOne({ where: { email } });
-  if (!user) {
-    throw new Error('Usuário não encontrado'); // Erro específico para controle interno
+    const { resetCode, token } = await this.generatePasswordResetToken(email);
+
+    await emailService.sendPasswordResetEmail(email, resetCode);
+
+    // Simular envio de email mesmo se usuário não existir
+    return {
+      sent: true,
+      token,
+      message:
+        'Se o email estiver cadastrado, você receberá um código de verificação.',
+    };
+  } catch (error) {
+    throw new Error('FAILED_TO_PROCESS_RESET_REQUEST');
   }
+};
+
+exports.generatePasswordResetToken = async (email) => {
+  const user = await UserRepository.findByEmail(email);
+  if (!user) throw new Error('USER_NOT_FOUND');
 
   const resetCode = generateResetCode();
 
-  // Gera o token JWT
   const token = jwt.sign(
-    {
-      email,
-      code: resetCode,
-      purpose: 'password-reset',
-    },
+    { email, code: resetCode, purpose: 'password-reset' },
     JWT_SECRET,
-    { expiresIn: '10m' } // Código válido por 10 minutos
+    { expiresIn: '10m' }
   );
 
   return { resetCode, token };
 };
 
-// Função para redefinir senha usando token
 exports.resetPasswordWithToken = async (token, userCode, newPassword) => {
   try {
-    // Verifica e decodifica o token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Verifica se o token tem o propósito correto
     if (decoded.purpose !== 'password-reset') {
-      throw new Error('Token inválido');
+      throw new Error('INVALID_TOKEN_PURPOSE');
     }
 
-    // Verifica se o código está propósito correto
     if (decoded.code !== userCode) {
-      throw new Error('Código inválido');
+      throw new Error('INVALID_VERIFICATION_CODE');
     }
 
-    // Extrai o email do payload
-    const { email } = decoded;
+    const user = await UserRepository.findByEmail(decoded.email);
+    if (!user) throw new Error('USER_NOT_FOUND');
 
-    // Busca o usuário pelo email
-    const user = await User.findOne({ where: { email } });
+    this.validateNewPassword(newPassword, user.password_hash);
 
-    if (!user) {
-      throw new Error('Usuário não encontrado');
-    }
-
-    // Validação da força da senha
-    if (!validator.isStrongPassword(newPassword)) {
-      throw new Error('Senha deve ter 8+ caracteres com números e símbolos');
-    }
-
-    // Gera hash da nova senha
     const password_hash = await bcrypt.hash(newPassword, 10);
+    await UserRepository.update(user.user_id, {
+      password_hash,
+      reset_password: false,
+    });
 
-    // Atualiza a senha do usuário
-    await User.update(
-      { password_hash, reset_password: false },
-      { where: { user_id: user.user_id } }
-    );
+    await TokenBlacklistRepository.create({
+      token,
+      expires_at: new Date(decoded.exp * 1000),
+    });
 
     return { success: true };
   } catch (error) {
-    // Propaga o erro para ser tratado no controlador
+    this.mapJwtErrors(error);
     throw error;
   }
 };
 
-// Serviço de reset de senha no primeiro login
 exports.resetPasswordFirstLogin = async (
   email,
   currentPassword,
   newPassword
 ) => {
-  // Validação de campos obrigatórios
-  if (!email || !currentPassword || !newPassword) {
-    throw new Error('Todos os campos são obrigatórios');
-  }
+  try {
+    // Log de busca do usuário
+    const user = await UserRepository.findByEmail(email, {
+      attributes: ['user_id', 'password_hash'],
+    });
 
-  // Validação da força da senha antes de operações de banco
-  if (!validator.isStrongPassword(newPassword)) {
-    throw new Error('Senha deve ter 8+ caracteres com números e símbolos');
-  }
-
-  // Verificação se senhas são iguais
-  if (currentPassword === newPassword) {
-    throw new Error('A nova senha não pode ser igual a atual');
-  }
-
-  // Busca de usuário
-  const user = await User.findOne({ where: { email } });
-
-  if (!user) {
-    throw new Error('Credenciais inválidas');
-  }
-
-  // Verificação de senha atual
-  const isPasswordValid = await bcrypt.compare(
-    currentPassword,
-    user.password_hash
-  );
-  if (!isPasswordValid) {
-    throw new Error('Credenciais inválidas');
-  }
-
-  // Geração de hash da nova senha
-  const password_hash = await bcrypt.hash(newPassword, 10);
-
-  // Atualização no banco
-  await User.update(
-    {
-      password_hash: password_hash,
-      reset_password: false,
-    },
-    { where: { user_id: user.user_id } }
-  );
-
-  // Geração de novo token sem status de reset de senha
-  const newToken = jwt.sign(
-    {
-      user_id: user.user_id,
-      user_type: user.user_type,
-    },
-    JWT_SECRET,
-    {
-      expiresIn: '1h',
+    if (!user) {
+      console.error('Usuário não encontrado para o email:', email);
+      const error = new Error('INVALID_CREDENTIALS');
+      error.code = 'INVALID_CREDENTIALS';
+      throw error;
     }
-  );
 
-  // Retorno de sucesso
-  return {
-    success: true,
-    code: 'PASSWORD_UPDATED',
-    message: 'Senha atualizada com sucesso',
-    token: newToken,
+    // Log de comparação de senha
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
+
+    if (!isPasswordValid) {
+      console.error('Senha atual inválida');
+      const error = new Error('INVALID_CREDENTIALS');
+      error.code = 'INVALID_CREDENTIALS';
+      throw error;
+    }
+
+    // Validação de nova senha
+    try {
+      this.validateNewPassword(newPassword, currentPassword);
+    } catch (validationError) {
+      console.error('Erro na validação da nova senha:', validationError);
+      throw validationError;
+    }
+
+    // Hash da nova senha
+    const password_hash = await bcrypt.hash(newPassword, 10);
+
+    // Atualização do usuário
+    await UserRepository.update(user.user_id, {
+      password_hash,
+      reset_password: false,
+    });
+
+    // Geração de novo token
+    return this.generateNewAuthToken(user);
+  } catch (error) {
+    console.error('Erro detalhado:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    throw error;
+  }
+};
+
+// Helpers
+exports.validateNewPassword = (newPassword, currentPassword) => {
+  if (newPassword === currentPassword) {
+    throw new Error('NEW_PASSWORD_SAME_AS_CURRENT');
+  }
+
+  if (
+    !validator.isStrongPassword(newPassword, {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    })
+  ) {
+    throw new Error('WEAK_PASSWORD');
+  }
+};
+
+exports.generateNewAuthToken = (user) => {
+  return jwt.sign(
+    { user_id: user.user_id, user_type: user.user_type },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+};
+
+exports.mapJwtErrors = (error) => {
+  const errorMap = {
+    TokenExpiredError: 'TOKEN_EXPIRED',
+    JsonWebTokenError: 'INVALID_TOKEN',
+    NotBeforeError: 'TOKEN_NOT_ACTIVE',
   };
+
+  if (errorMap[error.name]) {
+    error.message = errorMap[error.name];
+  }
 };

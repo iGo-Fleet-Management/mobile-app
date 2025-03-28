@@ -1,80 +1,44 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt');
-const User = require('../models/User');
-const TokenBlacklist = require('../models/TokenBlacklist');
-const validator = require('validator');
-const { Sequelize } = require('sequelize');
+const UserRepository = require('../repositories/userRepository');
+const TokenBlacklistRepository = require('../repositories/tokenBlacklistRepository');
 
-// Serviço de registro de usuários
-exports.register = async (
-  user_type,
-  name,
-  last_name,
-  email,
-  password,
-  reset_password
-) => {
-  // Validação de formato de email
-  if (!validator.isEmail(email)) {
-    throw new Error('Formato de email inválido');
-  }
-
-  // Validação de tamanho da senha
-  if (password.length < 8) {
-    throw new Error('Senha deve ter no mínimo 8 caracteres');
-  }
-
-  // Verificação de email existente
-  const existingUser = await User.findOne({
-    where: {
-      email: email,
-    },
-  });
-
-  // Validação de duplicidade
+exports.register = async (userData) => {
+  // Verificar email existente usando repositório
+  const existingUser = await UserRepository.findByEmail(userData.email);
   if (existingUser) {
-    throw new Error('Este email já está registrado');
+    throw new Error('Email already registered');
   }
 
-  // Criptografia da senha
-  const password_hash = await bcrypt.hash(password, 10);
+  // Criptografar senha
+  const password_hash = await bcrypt.hash(userData.password, 10);
 
-  // Criação do usuário
-  const user = await User.create({
-    user_type,
-    name,
-    last_name,
-    email,
+  // Criar usuário via repositório
+  return UserRepository.create({
+    ...userData,
     password_hash,
-    reset_password,
   });
-  // Retorno do usuário criado
-  return {
-    name: user.name,
-    email: user.email,
-  };
 };
 
-// Serviço de autenticação de usuários
+// Versão atualizada do login
 exports.login = async (email, password) => {
-  // Busca o usuário pelo email no banco de dados
-  const user = await User.findOne({ where: { email } });
+  // Busca o usuário via repositório
+  const user = await UserRepository.findByEmail(email, {
+    attributes: ['user_id', 'user_type', 'reset_password', 'password_hash'],
+  });
 
-  // Verifica se o user existe
   if (!user) {
-    throw new Error('Credenciais invalidas');
+    throw new Error('Invalid credentials');
   }
 
-  // Compara a senha fornecida com o hash armazenado
+  // Comparação de senha
   const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
-  // Validação da senha
   if (!isPasswordValid) {
-    throw new Error('Credenciais inválidas');
+    throw new Error('Invalid credentials');
   }
 
-  // Geração do token JWT
+  // Geração do token
   const token = jwt.sign(
     {
       user_id: user.user_id,
@@ -82,59 +46,62 @@ exports.login = async (email, password) => {
       reset_password: user.reset_password,
     },
     JWT_SECRET,
-    {
-      expiresIn: '1h',
-    }
+    { expiresIn: '1h' }
   );
-  // Retorno do token e status de reset de senha
-  return { token, reset_password: user.reset_password };
+
+  return {
+    token,
+    reset_password: user.reset_password,
+  };
 };
 
+// Versão atualizada do logout
 exports.logout = async (token) => {
+  if (!token) {
+    throw new Error('Token not provided');
+  }
+
+  const decoded = jwt.decode(token);
+  if (!decoded?.exp) {
+    throw new Error('Invalid token format');
+  }
+
   try {
-    if (!token) {
-      throw new Error('Token não fornecido');
-    }
-
-    const decoded = jwt.decode(token);
-
-    if (!decoded || !decoded.exp) {
-      throw new Error('Token inválido ou malformado');
-    }
-
-    // Calcula a data de expiração do token
-    const expiresAt = new Date(decoded.exp * 1000);
-    console.log('Data de expiração:', expiresAt);
-
-    // Adiciona token à blacklist
-    await TokenBlacklist.create({
+    await TokenBlacklistRepository.create({
       token,
-      expires_at: expiresAt,
+      expires_at: new Date(decoded.exp * 1000),
     });
 
     return { success: true };
   } catch (error) {
-    console.error('Erro no serviço de logout:', error);
-    throw new Error('Falha ao processar logout');
+    console.error('Logout error:', error);
+    throw new Error('Logout failed');
   }
 };
 
+// Versão atualizada da verificação de token
 exports.isTokenRevoked = async (token) => {
-  const blacklistedToken = await TokenBlacklist.findOne({ where: { token } });
-  return !!blacklistedToken;
+  try {
+    const blacklistedToken = await TokenBlacklistRepository.findByToken(token);
+    return !!blacklistedToken;
+  } catch (error) {
+    console.error('Erro crítico na verificação:', {
+      error: error.message,
+      stack: error.stack,
+      token: token,
+    });
+    throw new Error('Falha na verificação do token');
+  }
 };
 
+// Versão atualizada da limpeza de tokens
 exports.cleanupExpiredTokens = async () => {
   try {
-    const result = await TokenBlacklist.destroy({
-      where: {
-        expires_at: { [Sequelize.Op.lt]: new Date() },
-      },
-    });
-    console.log(`Tokens expirados removidos: ${result}`);
+    const result = await TokenBlacklistRepository.deleteExpiredTokens();
+    //console.log(`Cleaned tokens: ${result}`);
     return result;
   } catch (error) {
-    console.error('Erro ao limpar tokens:', error);
-    throw new Error('Falha na limpeza de tokens');
+    console.error('Token cleanup error:', error);
+    throw new Error('Token cleanup failed');
   }
 };

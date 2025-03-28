@@ -4,11 +4,12 @@ const sequelize = require('../config/db');
 // Importar modelos
 const User = require('./User');
 const Address = require('./Address');
-
+const TokenBlacklist = require('./TokenBlacklist');
 // Criar objeto de modelos
 const models = {
   User,
   Address,
+  TokenBlacklist,
   sequelize,
   Sequelize,
 };

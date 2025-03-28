@@ -2,22 +2,19 @@ const express = require('express');
 const forgotPasswordController = require('../controllers/forgotPasswordController');
 const { validate } = require('../middlewares/validationMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
-const {
-  forgotPasswordSchema,
-  resetPasswordWithTokenSchema,
-} = require('../validators/forgotPasswordValidation');
+const forgotPasswordValidation = require('../validators/forgotPasswordValidation');
 
 const router = express.Router();
 
 router.post(
   '/forgot-password',
-  validate(forgotPasswordSchema),
+  validate(forgotPasswordValidation.forgotPasswordSchema()),
   forgotPasswordController.requestPasswordReset
 );
 
 router.post(
   '/reset-password-token',
-  validate(resetPasswordWithTokenSchema),
+  validate(forgotPasswordValidation.resetPasswordSchema()),
   forgotPasswordController.resetPasswordWithToken
 );
 

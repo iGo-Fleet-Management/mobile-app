@@ -7,6 +7,7 @@ exports.validate = (schema) => (req, res, next) => {
 
   // Se houver erros de validação
   if (error) {
+    console.error('Validation Error:', error.details);
     return res.status(422).json({
       code: 'VALIDATION_ERROR',
       details: error.details.map((detail) => ({
@@ -15,7 +16,6 @@ exports.validate = (schema) => (req, res, next) => {
       })), // HTTP 422 - Unprocessable Entity
     });
   }
-
   // Se a validação for bem-sucedida, passa para o próximo middleware/controller
   next();
 };

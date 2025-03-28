@@ -5,41 +5,19 @@ const emailService = require('../services/emailService');
 exports.requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
+    const { token } = await forgotPasswordService.requestPasswordReset(email);
 
-    // Busca o usuário pelo email
-    const user = await forgotPasswordService.findUserByEmail(email);
-
-    // Gera token JWT para recuperação de senha
-    const { resetCode, token } =
-      await forgotPasswordService.generatePasswordResetToken(email);
-
-    // Se o usuário existir, gera token e envia email
-    if (user) {
-      // Envia email com o link de recuperação
-      await emailService.sendPasswordResetEmail(email, resetCode);
-    }
-
-    // Retorna sempre sucesso (mesmo se email não existir, por segurança)
-    // Isso evita enumeração de emails existentes
     res.status(200).json({
       success: true,
-      message:
-        'Se o email estiver cadastrado, você receberá as instruções para redefinição de senha.',
       token,
+      message:
+        'Se o e-mail estiver cadastrado, você receberá um código de verificação. - teste',
     });
   } catch (error) {
-    if (error.message === 'Usuário não encontrado') {
-      // Mantém a resposta genérica por segurança
-      return res.status(200).json({
-        success: true,
-        message:
-          'Se o e-mail estiver cadastrado, você receberá um código de verificação.',
-      });
-    }
-    console.error('Erro ao solicitar recuperação de senha:', error);
     res.status(500).json({
-      code: 'SERVER_ERROR',
-      message: 'Erro ao processar a solicitação.',
+      success: false,
+      code: 'PASSWORD_RESET_ERROR',
+      message: 'Erro ao processar solicitação de recuperação de senha',
     });
   }
 };
@@ -48,48 +26,33 @@ exports.requestPasswordReset = async (req, res) => {
 exports.resetPasswordWithToken = async (req, res) => {
   try {
     const { token, code, newPassword } = req.body;
-
-    // Redefine a senha usando o token
-    const result = await forgotPasswordService.resetPasswordWithToken(
+    await forgotPasswordService.resetPasswordWithToken(
       token,
       code,
       newPassword
     );
 
-    res.status(200).json({
+    res.json({
       success: true,
-      code: 'PASSWORD_RESET_SUCCESS',
-      message: 'Senha redefinida com sucesso.',
+      message: 'Senha redefinida com sucesso',
     });
   } catch (error) {
-    // Tratamento específico para tipos de erro
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        code: 'TOKEN_EXPIRED',
-        message: 'O link de recuperação expirou. Solicite um novo link.',
-      });
-    }
+    const errorMap = {
+      TokenExpiredError: [401, 'TOKEN_EXPIRED', 'Link de recuperação expirado'],
+      JsonWebTokenError: [401, 'INVALID_TOKEN', 'Token inválido'],
+      WEAK_PASSWORD: [400, 'WEAK_PASSWORD', error.message],
+    };
 
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        code: 'INVALID_TOKEN',
-        message: 'Link de recuperação inválido.',
-      });
-    }
+    const [status, code, message] = errorMap[error.name] || [
+      500,
+      'SERVER_ERROR',
+      'Erro ao redefinir senha',
+    ];
 
-    if (
-      error.message === 'Senha deve ter 8+ caracteres com números e símbolos'
-    ) {
-      return res.status(400).json({
-        code: 'WEAK_PASSWORD',
-        message: error.message,
-      });
-    }
-
-    // Erro genérico
-    res.status(500).json({
-      code: 'SERVER_ERROR',
-      message: 'Erro ao redefinir a senha.',
+    res.status(status).json({
+      success: false,
+      code,
+      message,
     });
   }
 };
@@ -98,40 +61,60 @@ exports.resetPasswordWithToken = async (req, res) => {
 exports.resetPasswordFirstLogin = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const { email } = req.user; // Pegamos o email do Usuário autenticado via middleware
+    const { email } = req.user;
 
-    // Validação de campos obrigatórios
+    // Validação usando o padrão de resposta estabelecido
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
-        code: 'MISSING_FIELDS',
-        error: 'Campos obrigatórios faltando',
-      }); // 400 Bad Request
+        success: false,
+        code: 'MISSING_REQUIRED_FIELDS',
+        message: 'Todos os campos obrigatórios devem ser informados',
+      });
     }
 
-    console.log('Alterando senha para:', email);
-    console.log('SenhaAtual:', currentPassword);
-    console.log('NovaSenha:', newPassword);
-
-    // Chama serviço de alteração de senha
-    const reset = await forgotPasswordService.resetPasswordFirstLogin(
+    const result = await forgotPasswordService.resetPasswordFirstLogin(
       email,
       currentPassword,
       newPassword
     );
 
-    // Retorno do resultado
-    return res.status(200).json(reset);
+    return res.status(200).json({
+      success: true,
+      data: {
+        token: result.token,
+        message: 'Senha atualizada com sucesso',
+      },
+    });
   } catch (error) {
-    // Tipos específicos de erros
-    if (error.messages === 'Credenciais inválidas') {
-      return res.status(401).json({ error: 'Credenciais inválidas' }); // 401 Unauthorized
-    } else if (
-      error.message ===
-      'Senha deve ter Senha deve ter 8+ caracteres com números e símbolos'
-    ) {
-      return res.status(400).json({ error: error.message }); // 400 Bad Request
-    } else {
-      return res.status(500).json({ error: 'Erro ao processar solicitação' }); // Mensagem genérica para outros erros
-    }
+    const errorMapping = {
+      INVALID_CREDENTIALS: {
+        code: 'INVALID_CREDENTIALS',
+        status: 401,
+        message: 'Credenciais inválidas',
+      },
+      WEAK_PASSWORD: {
+        code: 'WEAK_PASSWORD',
+        status: 400,
+        message:
+          'A senha deve conter pelo menos 8 caracteres com números e símbolos',
+      },
+      NEW_PASSWORD_SAME_AS_CURRENT: {
+        code: 'NEW_PASSWORD_SAME_AS_CURRENT',
+        status: 400,
+        message: 'A nova senha não pode ser igual à senha atual',
+      },
+    };
+
+    const knownError = errorMapping[error.code] || {
+      code: 'PASSWORD_RESET_ERROR',
+      status: 500,
+      message: 'Erro ao processar a solicitação de alteração de senha',
+    };
+
+    return res.status(knownError.status).json({
+      success: false,
+      code: knownError.code,
+      message: knownError.message,
+    });
   }
 };

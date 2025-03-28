@@ -7,7 +7,7 @@ function startBlacklistCleanup() {
     } catch (error) {
       console.error('Erro ao limpar blacklist:', error);
     }
-    console.log('Limpeza de blacklist concluída');
+    //console.log('Limpeza de blacklist concluída');
   }, 30000);
 }
 

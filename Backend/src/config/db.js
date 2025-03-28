@@ -11,9 +11,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     ssl: {
       require: true, // Exige SSL
       rejectUnauthorized: false, // Ignora a validação do certificado (necessário para Neon)
-      useUTC: true, // Força uso de UTC
     },
-    timezone: '-03:00', // Ajusta timezone para -03:00 (Brasília)
   },
   logging: false, // Desativa logs de queries no console
   pool: {

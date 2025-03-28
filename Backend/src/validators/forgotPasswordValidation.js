@@ -28,7 +28,7 @@ const forgotPasswordValidation = {
     Joi.object({
       // Validação do token de recuperação
       token: Joi.string()
-        .uuid({ version: 'uuidv4' }) // Garante que seja um UUID válido
+        .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/) // Garante que seja um UUID válido
         .required()
         .messages({
           'string.guid': 'Token de recuperação inválido',
