@@ -4,10 +4,14 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const routes = require('./routes');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 dotenv.config(); // Carrega variáveis de ambiente do arquivo .env
 
 const app = express();
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Middlewares essenciais para segurança e funcionamento básico
 app.use(cors()); // Habilita CORS para todas as rotas

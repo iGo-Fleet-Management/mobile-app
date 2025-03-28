@@ -3,49 +3,6 @@ const UserRepository = require('../repositories/userRepository');
 const AddressRepository = require('../repositories/addressRepository');
 const { User, Address } = require('../models');
 
-// Serviço para completar o perfil do usuário
-exports.completeProfile = async (userId, userData, addressUpdates) => {
-  // Preparar dados do usuário considerando campos obrigatórios
-  const mappedUserData = {
-    cpf: userData.cpf,
-    birthdate: userData.birthdate,
-    phone: userData.phone,
-  };
-
-  const transaction = await sequelize.transaction();
-  try {
-    // Verificação adicional de existência do usuário
-    const existingUser = await User.findByPk(userId);
-    if (!existingUser) {
-      throw new Error('Usuário não encontrado');
-    }
-
-    // Atualizar usuário
-    await existingUser.update(mappedUserData, { transaction });
-
-    // Criar endereço
-    await AddressRepository.updateOrCreate(
-      { ...addressUpdates, user_id: userId },
-      { transaction }
-    );
-
-    await transaction.commit();
-    return UserRepository.findById(userId, {
-      include: [
-        {
-          model: Address,
-          as: 'addresses',
-          attributes: { exclude: ['user_id'] },
-        },
-      ],
-      attributes: { exclude: ['password_hash', 'reset_password'] },
-    });
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
-};
-
 exports.getProfileById = async (user_id) => {
   if (!user_id) {
     throw new Error('ID do usuário não fornecido');
@@ -73,28 +30,50 @@ exports.getProfileById = async (user_id) => {
   }
 };
 
-exports.updateProfile = async (userId, userData, addressUpdates = []) => {
+exports.saveProfile = async (
+  userId,
+  userData,
+  addressUpdates,
+  options = {}
+) => {
+  const { isInitialCompletion = false } = options;
   const transaction = await sequelize.transaction();
+
   try {
-    // Verifique se o usuário existe
+    // Verificação de existência do usuário
     const existingUser = await UserRepository.findById(userId, { transaction });
     if (!existingUser) {
       throw new Error('Usuário não encontrado');
     }
-    // Atualizar usuário
+
+    // Preparar dados do usuário
+    let userDataToUpdate = userData;
+    if (isInitialCompletion) {
+      userDataToUpdate = {
+        cpf: userData.cpf,
+        birthdate: userData.birthdate,
+        phone: userData.phone,
+      };
+    }
+
+    // Atualizar usuário se houver dados
     let updatedUser;
-    if (Object.keys(userData).length > 0) {
-      updatedUser = await UserRepository.update(userId, userData, {
+    if (Object.keys(userDataToUpdate).length > 0) {
+      updatedUser = await UserRepository.update(userId, userDataToUpdate, {
         transaction,
       });
     }
 
     // Processar endereços
+    const addressesToProcess = isInitialCompletion
+      ? [{ ...addressUpdates, user_id: userId }]
+      : addressUpdates.map((addr) => ({
+          ...addr,
+          user_id: !addr.address_id ? userId : undefined,
+        }));
+
     const updatedAddresses = [];
-    for (const addrData of addressUpdates) {
-      if (!addrData.address_id) {
-        addrData.user_id = userId;
-      }
+    for (const addrData of addressesToProcess) {
       const address = await AddressRepository.updateOrCreate(addrData, {
         transaction,
         where: addrData.address_id ? { user_id: userId } : undefined,

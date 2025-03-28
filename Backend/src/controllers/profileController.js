@@ -1,29 +1,5 @@
 const userService = require('../services/userService');
 
-// Controlador para completar o cadastro do usuário
-exports.completeRegistration = async (req, res) => {
-  try {
-    const { addressUpdates, userData } = req.body; // Extrai `address` separadamente
-
-    const result = await userService.completeProfile(
-      req.user.user_id,
-      userData,
-      addressUpdates // Passa `address` como `addressData`
-    );
-
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      code: 'PROFILE_COMPLETION_ERROR',
-      message: this.translateProfileError(error.message),
-    });
-  }
-};
-
 exports.getProfile = async (req, res) => {
   try {
     const profile = await userService.getProfileById(req.user.user_id);
@@ -40,10 +16,33 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+exports.completeRegistration = async (req, res) => {
+  try {
+    const { userData, addressUpdates } = req.body;
+    const result = await userService.saveProfile(
+      req.user.user_id,
+      userData,
+      addressUpdates,
+      { isInitialCompletion: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      code: 'PROFILE_COMPLETION_ERROR',
+      message: this.translateProfileError(error.message),
+    });
+  }
+};
+
 exports.updateProfile = async (req, res) => {
   try {
     const { userData, addressUpdates } = req.body;
-    const result = await userService.updateProfile(
+    const result = await userService.saveProfile(
       req.user.user_id,
       userData,
       addressUpdates
