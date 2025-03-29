@@ -29,7 +29,11 @@ const EditProfileScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.backButton}
+          testID="back-button"
+        >
           <MaterialIcons name="chevron-left" size={30} color="black" />
         </TouchableOpacity>
       </View>
@@ -110,8 +114,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    height: 50,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   backButton: {
     padding: 5,
@@ -120,43 +125,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   formContainer: {
-    padding: 20,
+    padding: 16,
   },
   fieldLabel: {
-    fontSize: 15,
-    marginBottom: 5,
-    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 12,
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
-    height: 48,
-    paddingHorizontal: 10,
-    marginBottom: 15,
+    padding: 10,
     fontSize: 16,
   },
   addressesButton: {
-    backgroundColor: '#4285F4',
-    borderRadius: 25,
-    paddingVertical: 12,
-    marginVertical: 20,
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderRadius: 5,
     alignItems: 'center',
+    marginTop: 20,
   },
   addressesButtonText: {
-    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
   saveButton: {
-    backgroundColor: '#4285F4',
-    borderRadius: 25,
-    paddingVertical: 12,
-    marginBottom: 20,
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 5,
     alignItems: 'center',
+    marginTop: 20,
   },
   saveButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },

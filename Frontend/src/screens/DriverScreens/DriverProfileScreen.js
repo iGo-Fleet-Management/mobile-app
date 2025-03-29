@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const DriverDriverProfileScreen = ({ navigation }) => {
+const DriverProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState({
     nome: 'John',
     sobrenome: 'Doe',

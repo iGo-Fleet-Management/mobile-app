@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import UserIcon from '../../components/common/UserIcon';
 
 // Components
 import Header from '../../components/common/Header';
+import UserIcon from '../../components/common/UserIcon';
 import TravelModeSelector from '../../components/home/TravelModeSelector';
 import StatusSwitch from '../../components/home/StatusSwitch';
 import AlertBox from '../../components/home/AlertBox';
@@ -14,8 +14,7 @@ import BottomUserBar from '../../components/home/BottomUserBar';
 // Assets
 import MapImage from '../../../assets/images/google-map-example-blog.png';
 
-
-export default function HomeScreen({ navigation }) {
+const PassengerHomeScreen = ({ navigation }) => {
   const [travelMode, setTravelMode] = useState('roundTrip');
   const [isLiberado, setIsLiberado] = useState(false);
 
@@ -24,51 +23,65 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="passenger-home-screen">
+      <View style={styles.container} testID="passenger-home-container">
+        {/* Header Section */}
+        <View style={styles.headerContainer} testID="header-container">
           <Header 
             title="iGO" 
-            
+            testID="app-header"
           />
           <View style={styles.userIconWrapper}>
-            <UserIcon onPress={handleUserIconPress} userName="John" />
+            <UserIcon 
+              onPress={handleUserIconPress} 
+              userName="John" 
+              testID="user-icon"
+            />
           </View>
         </View>
 
-        <View style={styles.dateCard}>
-          <Text style={styles.dayOfWeek}>Segunda-Feira</Text>
-          <Text style={styles.date}>27 de Novembro de 2023</Text>
+        {/* Date and Travel Mode Section */}
+        <View style={styles.dateCard} testID="date-card">
+          <Text style={styles.dayOfWeek} testID="day-text">Segunda-Feira</Text>
+          <Text style={styles.date} testID="date-text">27 de Novembro de 2023</Text>
           
           <TravelModeSelector 
             selectedMode={travelMode}
             onSelectMode={setTravelMode}
+            testID="travel-mode-selector"
           />
         </View>
 
+        {/* Status Switch */}
         <StatusSwitch 
           value={isLiberado}
           onValueChange={setIsLiberado}
           onHelpPress={() => navigation.navigate('Ajuda')}
+          testID="status-switch"
         />
 
+        {/* Alert Box */}
         <AlertBox 
           message="Seu motorista já iniciou o trajeto. Fique atento!"
-          onEditPress={() => {/* Handle edit */}}
+          onEditPress={() => {}}
+          testID="alert-box"
         />
 
+        {/* Map Container */}
         <MapContainer 
           source={MapImage}
+          testID="map-container"
         />
 
+        {/* Bottom User Bar */}
         <BottomUserBar 
           userName="John Doe"
+          testID="bottom-user-bar"
         />
       </View>
     </SafeAreaView>
   );
-}
-
+};
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -107,3 +120,5 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 });
+
+export default PassengerHomeScreen;

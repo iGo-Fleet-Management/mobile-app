@@ -7,31 +7,34 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HelpScreen = ({ navigation }) => {
   return (
-    <SafeAreaView style={styles.helpContainer} edges={['top']}>
-    <View style={styles.helpContainer}>
-      <Header 
-        title="Central de Ajuda" 
-        onArrowBackPress={() => navigation.goBack()} 
-      />
-      
-      <View style={styles.helpCard}>
-        <HelpItem 
-          icon="directions-car"
-          title="Acompanhamento em tempo real"
-          description="Acompanhe a localização do seu motorista em tempo real no mapa."
+    <SafeAreaView style={styles.helpContainer} edges={['top']} testID="help-container">
+      <View style={styles.helpContainer}>
+        <Header 
+          title="Central de Ajuda" 
+          onArrowBackPress={() => navigation.goBack()} 
         />
         
-        <HelpItem 
-          icon="toggle-on"
-          title="Status 'Liberado'"
-          description="Ative esta opção quando estiver pronto para o embarque."
-        />
-        
-        <ContactSection 
-          onContactPress={() => {/* Implement contact support logic */}}
-        />
+        <View style={styles.helpCard}>
+          <HelpItem 
+            icon="directions-car"
+            title="Acompanhamento em tempo real"
+            description="Acompanhe a localização do seu motorista em tempo real no mapa."
+            testID="help-item"
+          />
+          
+          <HelpItem 
+            icon="toggle-on"
+            title="Status 'Liberado'"
+            description="Ative esta opção quando estiver pronto para o embarque."
+            testID="help-item"
+          />
+          
+          <ContactSection 
+            onContactPress={() => {}}
+            testID="contact-section"
+          />
+        </View>
       </View>
-    </View>
     </SafeAreaView>
   );
 };
