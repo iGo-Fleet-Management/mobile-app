@@ -97,3 +97,21 @@ exports.saveProfile = async (
     throw error;
   }
 };
+
+exports.deleteUser = async (userId) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const existingUser = await UserRepository.findById(userId, { transaction });
+    if (!existingUser) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    const result = await UserRepository.delete(userId, { transaction });
+
+    await transaction.commit();
+    return result;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};

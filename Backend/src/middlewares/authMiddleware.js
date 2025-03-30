@@ -5,6 +5,10 @@ const { isTokenRevoked } = require('../services/authService');
 const { JWT_SECRET } = require('../config/jwt');
 
 exports.authenticate = async (req, res, next) => {
+  if (req.originalUrl.includes('/delete-user/') && req.method === 'DELETE') {
+    return next(); // Permite o acesso sem autenticação
+  }
+
   try {
     // Verificação básica do header
     const authHeader = req.headers.authorization;
