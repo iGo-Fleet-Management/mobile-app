@@ -4,81 +4,31 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-const DriverHomeScreen = () => {
+const DriverReturnScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const [selectedTrip, setSelectedTrip] = useState('ida');
+  const [selectedTrip, setSelectedTrip] = useState('volta');
   
   // Dados de exemplo
   const companyName = "Minions Vans";
   const date = new Date();
   const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   const totalPassengers = 5;
-  const oneWayOnly = 1;
   const returnOnly = 1;
   const releasedPassengers = 3;
   const driverName = "Roni Cristian";
   
   const handleTripSelect = (tripType) => {
-    setSelectedTrip(tripType);
+    if (tripType === 'ida') {
+      navigation.navigate('DriverHomeScreen');
+    } else {
+      setSelectedTrip(tripType);
+    }
   };
   
   const handleStartTrip = () => {
     // Navegação para a tela de trajeto ativo
     navigation.navigate('ActiveTrip');
-  };
-  
-  const handleProfilePress = () => {
-    // Navegação para o perfil do motorista
-    navigation.navigate('DriverProfile');
-  };
-  
-  // Renderiza o conteúdo do resumo do dia com base no tipo de viagem selecionado
-  const renderSummaryContent = () => {
-    if (selectedTrip === 'ida') {
-      return (
-        <>
-          <View style={styles.summaryItemContainer}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{totalPassengers}</Text>
-              <Text style={styles.summaryLabel}>Passageiros</Text>
-            </View>
-            
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{oneWayOnly}</Text>
-              <Text style={styles.summaryLabel}>Somente ida</Text>
-              <Ionicons name="arrow-forward" size={16} color="#777" />
-            </View>
-          </View>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <View style={styles.summaryItemContainer}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{totalPassengers}</Text>
-              <Text style={styles.summaryLabel}>Passageiros</Text>
-              <MaterialIcons name="people" size={16} color="#777" />
-            </View>
-            
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{returnOnly}</Text>
-              <Text style={styles.summaryLabel}>Somente volta</Text>
-              <Ionicons name="arrow-back" size={16} color="#777" />
-            </View>
-          </View>
-
-          <View style={[styles.summaryItemContainer, { marginTop: 10 }]}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{releasedPassengers}</Text>
-              <Text style={styles.summaryLabel}>Liberados</Text>
-              <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
-            </View>
-          </View>
-        </>
-      );
-    }
   };
   
   return (
@@ -89,10 +39,8 @@ const DriverHomeScreen = () => {
       <View style={styles.header}>
         <Text style={styles.logo}>iGO</Text>
         <View style={styles.profileContainer}>
-          <TouchableOpacity onPress={handleProfilePress}>
-            <Text style={styles.driverName}>{driverName}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.profileIcon} onPress={handleProfilePress}>
+          <Text style={styles.driverName}>{driverName}</Text>
+          <TouchableOpacity style={styles.profileIcon}>
             <MaterialIcons name="person" size={24} color="#000" />
           </TouchableOpacity>
         </View>
@@ -135,7 +83,27 @@ const DriverHomeScreen = () => {
         <Text style={styles.summaryTitle}>Resumo do Dia</Text>
         <Text style={styles.summaryDate}>{formattedDate}</Text>
         
-        {renderSummaryContent()}
+        <View style={styles.summaryItemContainer}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{totalPassengers}</Text>
+            <Text style={styles.summaryLabel}>Passageiros</Text>
+            <MaterialIcons name="people" size={16} color="#777" />
+          </View>
+          
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{returnOnly}</Text>
+            <Text style={styles.summaryLabel}>Somente volta</Text>
+            <Ionicons name="arrow-back" size={16} color="#777" />
+          </View>
+        </View>
+
+        <View style={[styles.summaryItemContainer, { marginTop: 10 }]}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{releasedPassengers}</Text>
+            <Text style={styles.summaryLabel}>Liberados</Text>
+            <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+          </View>
+        </View>
       </View>
       
       {/* Start Trip Button */}
@@ -255,10 +223,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
+    marginTop: 30,
   },
   startTripText: {
     color: '#fff',
@@ -267,4 +232,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DriverHomeScreen;
+export default DriverReturnScreen; 

@@ -25,7 +25,7 @@ const BottomTabNavigator = () => {
 
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#3f51b5',
+        tabBarActiveTintColor: '#4285F4',
         tabBarInactiveTintColor: 'gray',
       })}
     >

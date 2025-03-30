@@ -9,6 +9,7 @@ import SignUpScreen from '../screens/CommonScreens/SignUpScreen';
 import ResetPasswordScreen from '../screens/CommonScreens/ResetPasswordScreen';
 
 import PassengerProfileScreen from '../screens/PassengerScreens/PassengerProfileScreen';
+import DriverProfileScreen from '../screens/DriverScreens/DriverProfileScreen';
 import EditProfileScreen from '../screens/CommonScreens/EditProfileScreen';
 import EditAddressesScreen from '../screens/CommonScreens/EditAddressesScreen';
 import PassengerHomeScreen from '../screens/PassengerScreens/PassengerHomeScreen';
@@ -45,6 +46,13 @@ const StackNavigator = () => {
           }}
         />
         <Stack.Screen 
+          name="DriverProfile" 
+          component={DriverProfileScreen}
+          options={{
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen 
           name="EditProfile" 
           component={EditProfileScreen}
           options={{
@@ -63,7 +71,13 @@ const StackNavigator = () => {
         <Stack.Screen name="PassengerHomeScreen" component={PassengerHomeScreen} />
         <Stack.Screen name="Ajuda" component={HelpScreen} />
         {/* DriverHomeScrenn */}
-        <Stack.Screen name="DriverHomeScreen" component={BottomTab} />
+        <Stack.Screen 
+          name="DriverHomeScreen" 
+          component={BottomTab} 
+          options={{
+            gestureEnabled: false
+          }}
+        />
 
       </Stack.Navigator>
     </NavigationContainer>

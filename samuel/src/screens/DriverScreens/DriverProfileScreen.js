@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import LogoutConfirmation from '../../components/common/Logout';
 
-const DriverDriverProfileScreen = ({ navigation }) => {
+const DriverProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState({
-    nome: 'John',
-    sobrenome: 'Doe',
+    nome: 'Roni',
+    sobrenome: 'Cristian',
     cpf: '123.456.789-10',
-    dataNascimento: '02/09/2003',
-    email: 'johndoe@gmail.com',
+    dataNascimento: '02/09/1990',
+    email: 'roni.cristian@gmail.com',
     telefone: '(31) 9 1234-5678',
     enderecos: [
       { tipo: 'Casa', logradouro: 'R.', numero: '12', bairro: 'Bairro 1', cidade: 'Ipatinga', cep: '35123-000' },
       { tipo: 'Trabalho', logradouro: 'R.', numero: '72', bairro: 'Bairro 4', cidade: 'Ipatinga', cep: '35123-000' }
     ]
   });
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleEditProfile = () => {
     navigation.navigate('EditProfile');
@@ -26,8 +29,16 @@ const DriverDriverProfileScreen = ({ navigation }) => {
   };
 
   const handleLogout = () => {
-    // Show the logout confirmation dialog
-    navigation.setParams({ showLogoutConfirm: true });
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    navigation.navigate('Login');
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -50,13 +61,10 @@ const DriverDriverProfileScreen = ({ navigation }) => {
             </View>
           </View>
           <Text style={styles.userName}>{`${userData.nome} ${userData.sobrenome}`}</Text>
-          <Text style={styles.userRole}>Passageiro</Text>
+          <Text style={styles.userRole}>Motorista</Text>
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.infoLabel}>Idade:</Text>
-          <Text style={styles.infoValue}>20</Text>
-          
           <Text style={styles.infoLabel}>Telefone:</Text>
           <Text style={styles.infoValue}>{userData.telefone}</Text>
           
@@ -86,7 +94,11 @@ const DriverDriverProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Logout Confirmation Dialog would go here */}
+      <LogoutConfirmation
+        visible={showLogoutModal}
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+      />
     </SafeAreaView>
   );
 };
@@ -195,7 +207,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: 'red',
-  },
+  }
 });
 
 export default DriverProfileScreen;
