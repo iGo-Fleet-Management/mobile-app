@@ -17,14 +17,54 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-exports.completeRegistration = async (req, res) => {
+// exports.completeRegistration = async (req, res) => {
+//   try {
+//     const { userData, addressUpdates } = req.body;
+//     const result = await userService.saveProfile(
+//       req.user.user_id,
+//       userData,
+//       addressUpdates,
+//       { isInitialCompletion: true }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       data: result,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       success: false,
+//       code: 'PROFILE_COMPLETION_ERROR',
+//       message: this.translateProfileError(error.message),
+//     });
+//   }
+// };
+
+exports.updateProfile = async (req, res) => {
   try {
-    const { userData, addressUpdates } = req.body;
-    const result = await userService.saveProfile(
+    const { userData } = req.body;
+    const result = await userService.saveProfile(req.user.user_id, userData);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    const status = error.message.includes('não encontrado') ? 404 : 500;
+    res.status(status).json({
+      success: false,
+      code: 'PROFILE_UPDATE_ERROR',
+      message: this.translateProfileError(error.message),
+    });
+  }
+};
+
+exports.updateAddresses = async (req, res) => {
+  try {
+    const { addressUpdates } = req.body;
+    const result = await userService.saveAddress(
       req.user.user_id,
-      userData,
-      addressUpdates,
-      { isInitialCompletion: true }
+      addressUpdates
     );
 
     res.status(200).json({
@@ -32,21 +72,23 @@ exports.completeRegistration = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    res.status(400).json({
+    const status = error.message.includes('não encontrado') ? 404 : 500;
+    res.status(status).json({
       success: false,
-      code: 'PROFILE_COMPLETION_ERROR',
+      code: 'ADDRESS_UPDATE_ERROR',
       message: this.translateProfileError(error.message),
     });
   }
 };
 
-exports.updateProfile = async (req, res) => {
+// Controller que mantém a funcionalidade combinada para compatibilidade
+exports.createProfile = async (req, res) => {
   try {
-    const { userData, addressUpdates } = req.body;
-    const result = await userService.saveProfile(
+    const { userData, addressData } = req.body;
+    const result = await userService.createProfile(
       req.user.user_id,
       userData,
-      addressUpdates
+      addressData
     );
 
     res.status(200).json({

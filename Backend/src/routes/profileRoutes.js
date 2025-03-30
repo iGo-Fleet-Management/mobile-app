@@ -2,6 +2,7 @@ const express = require('express');
 const profileController = require('../controllers/profileController');
 // Importação dos novos validadores
 const userValidation = require('../validators/userValidation');
+const addressValidation = require('../validators/addressValidation');
 const { validate } = require('../middlewares/validationMiddleware');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { checkProfileComplete } = require('../middlewares/profileMiddleware');
@@ -15,6 +16,77 @@ const { checkProfileComplete } = require('../middlewares/profileMiddleware');
 const router = express.Router();
 
 router.use(authenticate);
+
+/**
+ * @swagger
+ * /profile:
+ *   get:
+ *     summary: Obter perfil completo
+ *     description: Retorna todos os dados do perfil incluindo endereços
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil recuperado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       404:
+ *         description: Perfil não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/', profileController.getProfile);
+
+/**
+ * @swagger
+ * /profile/check-profile:
+ *   get:
+ *     summary: Verificar completude do perfil
+ *     description: Verifica se o perfil do usuário está completamente preenchido
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil completamente preenchido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 message:
+ *                   type: string
+ *       428:
+ *         description: Perfil incompleto
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: string
+ *                   example: PROFILE_INCOMPLETE
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Erro interno do servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+router.get('/check', checkProfileComplete);
 
 /**
  * @swagger
@@ -94,17 +166,17 @@ router.use(authenticate);
  *                   type: string
  */
 router.put(
-  '/complete-profile',
-  validate(userValidation.completeProfileSchema()),
-  profileController.completeRegistration
+  '/create',
+  validate(userValidation.createProfileSchema()),
+  profileController.createProfile
 );
 
 /**
  * @swagger
- * /profile:
+ * /profile/update-profile:
  *   put:
- *     summary: Atualizar perfil do usuário
- *     description: Rota para atualizar informações do perfil
+ *     summary: Atualizar dados do usuário
+ *     description: Atualiza informações básicas do perfil do usuário
  *     tags: [Profile]
  *     security:
  *       - bearerAuth: []
@@ -117,136 +189,145 @@ router.put(
  *             properties:
  *               userData:
  *                 type: object
- *                 description: Dados do usuário para atualização
- *               addressUpdates:
- *                 type: object
- *                 description: Informações de endereço para atualização
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                     example: João Silva
+ *                   phone:
+ *                     type: string
+ *                     example: 31999999999
+ *                 description: Dados pessoais para atualização
  *     responses:
  *       200:
- *         description: Perfil atualizado com sucesso
+ *         description: Dados atualizados com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   description: Dados do perfil atualizado
- *       404:
- *         description: Usuário não encontrado
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Erro de validação
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 code:
- *                   type: string
- *                   example: PROFILE_UPDATE_ERROR
- *                 message:
- *                   type: string
- *       500:
- *         description: Erro interno do servidor
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 code:
- *                   type: string
- *                 message:
- *                   type: string
- *   get:
- *     summary: Obter perfil do usuário
- *     description: Rota para recuperar informações do perfil do usuário autenticado
- *     tags: [Profile]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Perfil recuperado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   description: Detalhes do perfil do usuário
- *       404:
- *         description: Perfil não encontrado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 code:
- *                   type: string
- *                   example: PROFILE_NOT_FOUND
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.put(
-  '/',
-  validate(userValidation.updateProfileSchema()),
+  '/update-profile',
+  validate(userValidation.updateUserDataSchema()),
   profileController.updateProfile
 );
-router.get('/', profileController.getProfile);
 
 /**
  * @swagger
- * /profile/check-profile:
- *   get:
- *     summary: Verificar completude do perfil
- *     description: Verifica se o perfil do usuário está completamente preenchido
+ * /profile/update-address:
+ *   put:
+ *     summary: Atualizar endereços
+ *     description: Atualiza ou cria novos endereços (envie address_id para atualizar)
  *     tags: [Profile]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               addressUpdates:
+ *                 type: array
+ *                 items:
+ *                   oneOf:
+ *                     - type: object
+ *                       properties:
+ *                         address_id:
+ *                           type: string
+ *                           format: uuid
+ *                           example: d6890194-eba3-47b2-8294-f99f0e8735ac
+ *                         address_type:
+ *                           type: string
+ *                           example: Casa
+ *                         cep:
+ *                           type: string
+ *                           example: "35164099"
+ *                         street:
+ *                           type: string
+ *                           example: Rua Pretoria
+ *                         number:
+ *                           type: integer
+ *                           example: 123
+ *                         complement:
+ *                           type: string
+ *                           example: Apt 101
+ *                         neighbourhood:
+ *                           type: string
+ *                           example: Bethânia
+ *                         city:
+ *                           type: string
+ *                           example: Ipatinga
+ *                         state:
+ *                           type: string
+ *                           example: MG
+ *                       required:
+ *                         - address_id
+ *                     - type: object
+ *                       properties:
+ *                         address_type:
+ *                           type: string
+ *                           required: true
+ *                           example: Trabalho
+ *                         cep:
+ *                           type: string
+ *                           required: true
+ *                           example: "30130001"
+ *                         street:
+ *                           type: string
+ *                           required: true
+ *                           example: Av. Paulista
+ *                         number:
+ *                           type: integer
+ *                           required: true
+ *                           example: 1000
+ *                         complement:
+ *                           type: string
+ *                           example: ""
+ *                         neighbourhood:
+ *                           type: string
+ *                           required: true
+ *                           example: Bela Vista
+ *                         city:
+ *                           type: string
+ *                           required: true
+ *                           example: São Paulo
+ *                         state:
+ *                           type: string
+ *                           required: true
+ *                           example: SP
+ *                 minItems: 1
  *     responses:
  *       200:
- *         description: Perfil completamente preenchido
+ *         description: Endereços atualizados com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 code:
- *                   type: string
- *                   example: SUCCESS
- *                 message:
- *                   type: string
- *       428:
- *         description: Perfil incompleto
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       404:
+ *         description: Erro ao atualizar endereços
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 code:
- *                   type: string
- *                   example: PROFILE_INCOMPLETE
- *                 message:
- *                   type: string
- *       500:
- *         description: Erro interno do servidor
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *               examples:
+ *                 address-not-found:
+ *                   value:
+ *                     success: false
+ *                     code: ADDRESS_UPDATE_ERROR
+ *                     message: Endereço não encontrado
  */
-router.get('/check-profile', checkProfileComplete);
+router.put(
+  '/update-address',
+  validate(addressValidation.updateAddressSchema()),
+  profileController.updateAddresses
+);
 
 /**
  * @swagger

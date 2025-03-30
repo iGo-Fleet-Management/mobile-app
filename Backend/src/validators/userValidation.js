@@ -12,7 +12,7 @@ const userValidation = {
    * Schema para criação de perfil completo
    * @returns {Joi.ObjectSchema} - Schema de perfil completo
    */
-  completeProfileSchema: () =>
+  createProfileSchema: () =>
     Joi.object({
       userData: Joi.object({
         cpf: commonValidations
@@ -32,14 +32,15 @@ const userValidation = {
         }),
       }).required(),
 
-      addressUpdates: addressValidation.createSchema().required(),
+      addressData: addressValidation.createSchema().required(),
     }),
 
   /**
    * Schema para atualização parcial de perfil
    * @returns {Joi.ObjectSchema} - Schema de atualização
    */
-  updateProfileSchema: () =>
+
+  updateUserDataSchema: () =>
     Joi.object({
       userData: Joi.object({
         name: Joi.string().min(2).optional(),
@@ -49,18 +50,9 @@ const userValidation = {
         phone: commonValidations.phoneValidator().optional(),
         email: commonValidations.emailValidator().optional(),
       })
-        .allow({}, null)
-        .optional(),
-
-      addressUpdates: Joi.array()
-        .items(
-          Joi.alternatives().try(
-            addressValidation.createSchema(),
-            addressValidation.updateSchema()
-          )
-        )
-        .optional(),
-    }).or('userData', 'addressUpdates'),
+        .min(1)
+        .required(),
+    }),
 };
 
 module.exports = userValidation;

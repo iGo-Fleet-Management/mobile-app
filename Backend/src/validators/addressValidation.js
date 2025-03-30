@@ -54,20 +54,25 @@ const addressValidation = {
    * Schema para atualização de endereço
    * @returns {Joi.ObjectSchema} - Schema de atualização
    */
-  updateSchema: () =>
+  updateAddressSchema: () =>
     Joi.object({
-      address_id: Joi.string().uuid().required(),
-
-      // Mesmos campos do createSchema, mas todos opcionais
-      address_type: Joi.string().optional(),
-      cep: commonValidations.createNumericValidator(8, 'CEP').optional(),
-      street: Joi.string().optional(),
-      number: Joi.number().optional(),
-      complement: Joi.string().allow('').optional(),
-      neighbourhood: Joi.string().optional(),
-      city: Joi.string().optional(),
-      state: commonValidations.brazilianStateValidator().optional(),
-    }).min(1), // Requer pelo menos um campo
+      addressUpdates: Joi.array()
+        .items(
+          Joi.object({
+            address_id: Joi.string().uuid().optional(),
+            address_type: Joi.string().optional(),
+            cep: commonValidations.createNumericValidator(8, 'CEP').optional(),
+            street: Joi.string().optional(),
+            number: Joi.number().optional(),
+            complement: Joi.string().allow('').optional(),
+            neighbourhood: Joi.string().optional(),
+            city: Joi.string().optional(),
+            state: commonValidations.brazilianStateValidator().optional(),
+          }).min(1) // Cada item do array deve ter pelo menos um campo além do address_id
+        )
+        .required()
+        .min(1), // Requer pelo menos um endereço no array
+    }),
 };
 
 module.exports = addressValidation;
