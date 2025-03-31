@@ -58,6 +58,11 @@ User.associate = (models) => {
     as: 'addresses',
     onDelete: 'CASCADE',
   });
+  User.hasMany(models.Stop, {
+    foreignKey: 'user_id',
+    as: 'stops',
+    onDelete: 'CASCADE',
+  });
 };
 
 module.exports = User;

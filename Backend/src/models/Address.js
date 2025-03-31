@@ -63,6 +63,11 @@ Address.associate = (models) => {
     as: 'user',
     onDelete: 'CASCADE', // Reflete o ON DELETE CASCADE do SQL
   });
+  Address.hasMany(models.Stop, {
+    foreignKey: 'address_id',
+    as: 'stops',
+    onDelete: 'CASCADE',
+  });
 };
 
 module.exports = Address;

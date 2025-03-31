@@ -5,13 +5,17 @@ const sequelize = require('../config/db');
 const User = require('./User');
 const Address = require('./Address');
 const TokenBlacklist = require('./TokenBlacklist');
+const Trip = require('./Trip');
+const Stop = require('./Stop');
 // Criar objeto de modelos
 const models = {
   User,
   Address,
+  Trip,
+  Stop,
   TokenBlacklist,
-  sequelize,
   Sequelize,
+  sequelize,
 };
 
 // Configurar associações

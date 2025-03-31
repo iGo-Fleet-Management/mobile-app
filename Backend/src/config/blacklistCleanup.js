@@ -8,7 +8,7 @@ function startBlacklistCleanup() {
       console.error('Erro ao limpar blacklist:', error);
     }
     //console.log('Limpeza de blacklist concluída');
-  }, 30000);
+  }, 100000);
 }
 
 module.exports = startBlacklistCleanup;
