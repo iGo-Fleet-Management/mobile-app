@@ -141,26 +141,26 @@ describe('Auth Controller - Register', () => {
   describe('Logout', () => {
     let req;
     let res;
-  
+
     beforeEach(() => {
       // Mock do objeto req e res
       req = {
-        headers: {}
+        headers: {},
       };
       res = {
         status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis()
+        json: jest.fn().mockReturnThis(),
       };
-  
+
       // Mock do método extractToken
       authController.extractToken = jest.fn().mockReturnValue('fake-jwt-token');
     });
-  
+
     test('Deve realizar logout com sucesso e retornar status 200', async () => {
       authService.logout.mockResolvedValue(); // Simula sucesso no logout
-  
+
       await authController.logout(req, res);
-  
+
       expect(authController.extractToken).toHaveBeenCalledWith(req);
       expect(authService.logout).toHaveBeenCalledWith('fake-jwt-token');
       expect(res.status).toHaveBeenCalledWith(200);
@@ -169,12 +169,12 @@ describe('Auth Controller - Register', () => {
         message: 'Logout realizado com sucesso',
       });
     });
-  
+
     test('Deve retornar erro 401 se o token for inválido', async () => {
       authService.logout.mockRejectedValue(new Error('Token inválido'));
-  
+
       await authController.logout(req, res);
-  
+
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
@@ -182,14 +182,14 @@ describe('Auth Controller - Register', () => {
         message: expect.any(String),
       });
     });
-  
+
     test('Deve retornar erro 500 para falha interna', async () => {
       authService.logout.mockRejectedValue(
         new Error('Erro inesperado no logout')
       );
-  
+
       await authController.logout(req, res);
-  
+
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
@@ -197,5 +197,5 @@ describe('Auth Controller - Register', () => {
         message: expect.any(String),
       });
     });
-  });  
+  });
 });
