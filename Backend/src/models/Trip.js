@@ -13,7 +13,7 @@ const Trip = sequelize.define(
       type: DataTypes.STRING(50),
     },
     trip_date: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false,
     },
   },

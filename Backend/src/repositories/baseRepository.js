@@ -17,7 +17,10 @@ class BaseRepository {
   }
 
   async create(data, options = {}) {
-    return this.model.create(data, options);
+    return this.model.create(data, {
+      transaction: options.transaction, // 👈 Transação propagada
+      ...options,
+    });
   }
 
   async update(id, data, options = {}) {

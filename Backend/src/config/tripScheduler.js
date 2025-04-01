@@ -1,27 +1,37 @@
 // tripScheduler.js
+const { DateTime } = require('luxon');
+const cron = require('node-cron');
 const { createDailyTrips } = require('../services/tripService');
 
 function startTripScheduler() {
-  // Agenda a criação de viagens todos os dias às 00:00 (meia-noite)
-  const intervalMs = 10000; // 24 horas em milissegundos
-  // const intervalMs = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
-
-  // Executa imediatamente no startup e depois no intervalo
   const scheduleCreation = async () => {
     try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1); // Cria para o próximo dia
-      await createDailyTrips(tomorrow);
+      // Calcula "amanhã" no fuso correto
+      const today = DateTime.now()
+        .setZone('America/Sao_Paulo')
+        .plus({ days: 0 })
+        .toJSDate();
+
+      await createDailyTrips(today);
+      console.log(
+        `Viagens para ${DateTime.fromJSDate(today).setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd')} agendadas com sucesso`
+      );
     } catch (error) {
       console.error('Erro na criação automática de viagens:', error.message);
+      // Implementando retry após 1 hora em caso de falha
+      setTimeout(scheduleCreation, 60 * 60 * 1);
+      console.log('Agendando nova tentativa em 1 hora');
+      console.error(error.stack);
     }
   };
 
-  // Primeira execução
-  scheduleCreation();
+  // Agenda execução diária às 00:00 (meia-noite no timezone do servidor)
+  cron.schedule('0 0 * * *', scheduleCreation, {
+    timezone: 'America/Sao_Paulo',
+  });
 
-  // Agendamento periódico
-  setInterval(scheduleCreation, intervalMs);
+  // Executa imediatamente no startup (opcional)
+  scheduleCreation();
 }
 
 module.exports = startTripScheduler;

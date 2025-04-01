@@ -2,6 +2,7 @@ const express = require('express');
 const authRoutes = require('./authRoutes');
 const profileRoutes = require('./profileRoutes');
 const forgotPasswordRoutes = require('./forgotPasswordRoutes');
+const tripRoutes = require('./tripRoutes');
 
 const router = express.Router();
 
@@ -12,5 +13,7 @@ router.use('/auth', forgotPasswordRoutes);
 
 // Agrupamento de rotas de perfil
 router.use('/profile', profileRoutes);
+
+router.use('/trips', tripRoutes);
 
 module.exports = router;

@@ -4,7 +4,6 @@ const controller = require('../controllers/tripController');
 const { validate } = require('../middlewares/validationMiddleware');
 const { authenticate } = require('../middlewares/authMiddleware');
 const {
-  createTripSchema,
   tripParamsSchema,
   dailyTripsSchema,
 } = require('../validators/tripValidation');
@@ -12,12 +11,6 @@ const {
 const router = express.Router();
 
 router.use(authenticate);
-
-router.post(
-  '/trips/create',
-  validate(createTripSchema),
-  controller.createDailyTrips
-);
 
 router.get(
   '/trips/daily',

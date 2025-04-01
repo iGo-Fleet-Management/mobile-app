@@ -16,7 +16,7 @@ const createTripSchema = Joi.object().keys({
 
 const dailyTripsSchema = Joi.object().keys({
   query: Joi.object({
-    date: Joi.date().iso().default(new Date().toISOString()),
+    date: Joi.string().isoDate().default(new Date().toISOString()), // Mantém como string!
   }),
 });
 

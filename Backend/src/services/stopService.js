@@ -103,6 +103,7 @@ exports.getTripStops = async (tripId, options = {}) =>
       include: ['user', 'address'],
       transaction,
     });
+    console.log('stops', stops);
     return stops.map((stop) => stop.get({ plain: true }));
   });
 
