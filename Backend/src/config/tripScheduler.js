@@ -13,13 +13,10 @@ function startTripScheduler() {
         .toJSDate();
 
       await createDailyTrips(today);
-      console.log(
-        `Viagens para ${DateTime.fromJSDate(today).setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd')} agendadas com sucesso`
-      );
     } catch (error) {
       console.error('Erro na criação automática de viagens:', error.message);
       // Implementando retry após 1 hora em caso de falha
-      setTimeout(scheduleCreation, 60 * 60 * 1);
+      setTimeout(scheduleCreation, 60 * 60 * 1000);
       console.log('Agendando nova tentativa em 1 hora');
       console.error(error.stack);
     }

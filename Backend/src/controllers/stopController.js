@@ -4,7 +4,7 @@ exports.createStop = async (req, res) => {
   try {
     const stopData = {
       ...req.body,
-      user_id: req.user.id, // Supondo autenticação implementada
+      user_id: req.user.user_id, // Supondo autenticação implementada
     };
 
     const newStop = await StopService.createStop(stopData);

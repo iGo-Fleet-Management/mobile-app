@@ -3,6 +3,7 @@ const { Stop, User, Address, Trip } = require('../models');
 const StopRepository = require('../repositories/stopRepository');
 const UserRepository = require('../repositories/userRepository');
 const TripRepository = require('../repositories/tripRepository');
+const AddressRepository = require('../repositories/addressRepository');
 
 // Helper genérico para transações (já existente, mantido para contexto)
 const withTransaction = async (existingTransaction, callback) => {
@@ -37,22 +38,17 @@ const validateStopRelations = async (stopData, transaction) => {
 // Helper para carregar relações completas
 const getStopWithRelations = async (stopId, transaction) =>
   StopRepository.findById(stopId, {
-    include: [
-      { model: User, as: 'user' },
-      { model: Address, as: 'address' },
-      { model: Trip, as: 'trip' },
-    ],
+    include: [{ model: Trip, as: 'trip' }],
     transaction,
   });
 
 exports.createStop = async (stopData, options = {}) =>
   withTransaction(options.transaction, async (transaction) => {
     // Validação do perfil completo
-    const isProfileComplete = await UserRepository.isProfileComplete(
-      stopData.user_id
-    );
-    if (!isProfileComplete) {
-      throw new Error('Perfil do usuário incompleto');
+    const user = await UserRepository.findById(stopData.user_id);
+
+    if (!user) {
+      throw new Error('Usuário não encontrado'); // ✅ Lança erro se não existir
     }
 
     await validateStopRelations(stopData, transaction);
@@ -103,7 +99,6 @@ exports.getTripStops = async (tripId, options = {}) =>
       include: ['user', 'address'],
       transaction,
     });
-    console.log('stops', stops);
     return stops.map((stop) => stop.get({ plain: true }));
   });
 

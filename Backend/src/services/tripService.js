@@ -109,33 +109,21 @@ exports.deleteTrip = async (tripId) =>
 
 // Método para obter viagens do dia
 exports.getDailyTrips = async (date) => {
-  console.log('Data recebida:', date);
-
   const zoneDate = date
     ? DateTime.fromISO(date, { zone: 'America/Sao_Paulo' })
     : DateTime.now().setZone('America/Sao_Paulo');
 
-  console.log('ZoneDate gerado:', zoneDate.toString());
-
   if (!zoneDate.isValid) {
-    console.log('Data inválida detectada');
     throw new Error('Data inválida');
   }
 
   const dateOnly = zoneDate.toFormat('yyyy-MM-dd');
-  console.log('Data formatada para consulta:', dateOnly);
-
-  // Log da consulta
-  console.log('Buscando viagens para a data:', dateOnly);
 
   const trips = await TripRepository.model.findAll({
     where: {
       trip_date: dateOnly,
     },
-    logging: console.log, // Isso vai mostrar a consulta SQL real
   });
-
-  console.log('Viagens encontradas:', trips.length);
 
   return trips;
 };

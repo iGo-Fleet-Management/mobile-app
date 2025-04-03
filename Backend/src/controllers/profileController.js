@@ -2,7 +2,6 @@ const userService = require('../services/userService');
 
 exports.getProfile = async (req, res) => {
   try {
-    console.log(req.user.user_id);
     const profile = await userService.getProfileById(req.user.user_id);
     res.status(200).json({
       success: true,
@@ -108,7 +107,6 @@ exports.createProfile = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    console.log(userId);
     // Validação básica do ID
     if (!userId) {
       return res.status(400).json({

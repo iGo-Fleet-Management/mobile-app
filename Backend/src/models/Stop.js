@@ -13,7 +13,7 @@ const Stop = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'users', // Tabela users
+        model: 'User', // Tabela users
         key: 'user_id',
       },
     },
@@ -21,7 +21,7 @@ const Stop = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'address', // Tabela address
+        model: 'Address', // Tabela address
         key: 'address_id',
       },
     },
@@ -29,7 +29,7 @@ const Stop = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'trip', // Tabela trip
+        model: 'Trip', // Tabela trip
         key: 'trip_id',
       },
     },

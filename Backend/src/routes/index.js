@@ -16,4 +16,6 @@ router.use('/profile', profileRoutes);
 
 router.use('/trips', tripRoutes);
 
+router.use('/stops', require('./stopRoutes'));
+
 module.exports = router;

@@ -98,7 +98,7 @@ exports.isTokenRevoked = async (token) => {
 exports.cleanupExpiredTokens = async () => {
   try {
     const result = await TokenBlacklistRepository.deleteExpiredTokens();
-    //console.log(`Cleaned tokens: ${result}`);
+    console.log(`Cleaned tokens: ${result}`);
     return result;
   } catch (error) {
     console.error('Token cleanup error:', error);

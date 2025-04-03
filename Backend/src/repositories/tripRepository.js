@@ -81,6 +81,9 @@ class TripRepository extends BaseRepository {
             !tripsToCreate.some((t) => t.trip_type === 'volta'))
       ),
       ...createdTrips,
+      console.log(
+        `Criadas ${createdTrips.length} novas viagens para ${tripDate}`
+      ),
     ];
   }
 }
