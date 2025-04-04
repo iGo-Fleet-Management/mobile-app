@@ -1,5 +1,6 @@
 const BaseRepository = require('./baseRepository');
 const { Stop } = require('../models');
+const { Op } = require('sequelize');
 
 class StopRepository extends BaseRepository {
   constructor() {
@@ -29,6 +30,16 @@ class StopRepository extends BaseRepository {
         stop_date: stopDate,
       },
       ...options,
+    });
+  }
+
+  async deleteUserStopsForTrips(userId, tripIds, transaction) {
+    return this.model.destroy({
+      where: {
+        user_id: userId,
+        trip_id: { [Op.in]: tripIds },
+      },
+      transaction,
     });
   }
 }

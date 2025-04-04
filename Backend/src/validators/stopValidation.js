@@ -21,14 +21,14 @@ const addRoundTripSchema = Joi.object({
       .pattern(uuidRegex)
       .required()
       .label('Endereço de ida'),
-    stop_date: Joi.date().iso().required().label('Data/hora de ida'),
+    stop_date: Joi.date().iso().required().raw().label('Data/hora de ida'),
   }).required(),
   backStop: Joi.object({
     address_id: Joi.string()
       .pattern(uuidRegex)
       .required()
       .label('Endereço de volta'),
-    stop_date: Joi.date().iso().required().label('Data/hora de volta'),
+    stop_date: Joi.date().iso().required().raw().label('Data/hora de volta'),
   }).required(),
 }).options({ stripUnknown: true });
 
