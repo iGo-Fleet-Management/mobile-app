@@ -43,6 +43,14 @@ class BaseRepository {
     if (affectedRows === 0) throw new Error('Registro não encontrado');
     return true;
   }
+
+  async findAll(options = {}) {
+    return this.model.findAll(options);
+  }
+
+  async findOne(options = {}) {
+    return this.model.findOne(options);
+  }
 }
 
 module.exports = BaseRepository;
