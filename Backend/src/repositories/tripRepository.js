@@ -1,31 +1,14 @@
 const BaseRepository = require('./baseRepository');
 const { Trip } = require('../models');
+const { Op } = require('sequelize');
 
 class TripRepository extends BaseRepository {
   constructor() {
     super(Trip);
   }
 
-  async findTripsByDate(startDate, endDate, options = {}) {
-    return this.model.findAll({
-      where: {
-        trip_date: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
-      ...options,
-    });
-  }
-
   async findTripsByType(tripType, options = {}) {
     return this.findByField('trip_type', tripType, options);
-  }
-
-  async getStopsForTrip(tripId, options = {}) {
-    return this.findById(tripId, {
-      include: ['stops'],
-      ...options,
-    });
   }
 
   async findTripByDateAndType(date, tripType, options = {}) {

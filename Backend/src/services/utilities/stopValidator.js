@@ -37,7 +37,7 @@ exports.validateStopRelations = async (stopData, transaction) => {
   }
 
   // 5. Validação de capacidade da viagem
-  if (trip.stops && trip.stops.length >= 10) {
+  if (trip.stops && trip.stops.length >= 25) {
     throw new Error('Viagem atingiu o limite máximo de paradas');
   }
 };

@@ -10,7 +10,8 @@ const Trip = sequelize.define(
       primaryKey: true,
     },
     trip_type: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.ENUM('ida', 'volta'), // Melhor usar ENUM para validar
+      allowNull: false,
     },
     trip_date: {
       type: DataTypes.DATEONLY,
@@ -18,12 +19,17 @@ const Trip = sequelize.define(
     },
   },
   {
-    tableName: 'trip', // Nome da tabela no banco
-    timestamps: false, // Remove campos automáticos
+    tableName: 'trip',
+    timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['trip_date', 'trip_type'], // Index composto para buscas
+      },
+    ],
   }
 );
 
-// Associação com Stop
 Trip.associate = (models) => {
   Trip.hasMany(models.Stop, {
     foreignKey: 'trip_id',

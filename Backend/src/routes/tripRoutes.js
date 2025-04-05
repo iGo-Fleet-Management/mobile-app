@@ -12,25 +12,16 @@ const router = express.Router();
 
 router.use(authenticate);
 
-router.get(
-  '/trips/daily',
-  validate(dailyTripsSchema),
-  controller.getDailyTrips
-);
+router.get('/daily', validate(dailyTripsSchema), controller.getDailyTrips);
 
 router.get(
-  '/trips/:tripId',
+  '/:tripId',
   validate(tripParamsSchema, 'params'),
   controller.getTrip
 );
 
-router.put(
-  '/trips/:tripId',
-  validate(tripParamsSchema, 'params'),
-  controller.updateTrip
-);
 router.delete(
-  '/trips/:tripId',
+  '/:tripId',
   validate(tripParamsSchema, 'params'),
   controller.deleteTrip
 );

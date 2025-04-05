@@ -1,5 +1,5 @@
 const TripService = require('../services/tripService');
-const { Op } = require('sequelize');
+const { DateTime } = require('luxon'); // 👈 Importação faltando
 
 //tranformar essa função para buscar paradas
 exports.getTrip = async (req, res) => {
@@ -25,35 +25,24 @@ exports.getTrip = async (req, res) => {
 exports.getDailyTrips = async (req, res) => {
   try {
     const { date } = req.query;
-    const trips = await TripService.getDailyTrips(date); // Envia a string, não um Date!
+
+    const trips = await TripService.getDailyTrips(date);
 
     res.status(200).json({
       status: 'success',
       results: trips.length,
-      data: trips,
+      data: trips.map((trip) => ({
+        ...trip.get({ plain: true }),
+        stops: trip.stops.map((stop) => ({
+          id: stop.stop_id,
+          date: stop.stop_date,
+          address: stop.address,
+        })),
+      })),
     });
   } catch (error) {
-    console.error('Erro detalhado:', error); // Adicione logs para debug
     res.status(500).json({
       status: 'error',
-      message: 'Erro ao buscar viagens diárias',
-    });
-  }
-};
-
-exports.updateTrip = async (req, res) => {
-  try {
-    const updatedTrip = await TripService.updateTrip(
-      req.params.tripId,
-      req.body
-    );
-    res.status(200).json({
-      status: 'success',
-      data: updatedTrip,
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: 'fail',
       message: error.message,
     });
   }

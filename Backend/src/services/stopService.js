@@ -2,7 +2,6 @@ const { withTransaction } = require('./utilities/transactionHelper');
 const { validateStopRelations } = require('./utilities/stopValidator');
 const stopManager = require('./utilities/stopManager');
 const TripRepository = require('../repositories/tripRepository');
-const StopRepository = require('../repositories/stopRepository');
 
 exports.upsertStop = async (stopData, transaction) => {
   return withTransaction(transaction, async (t) => {
