@@ -75,12 +75,6 @@ exports.authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Erro geral de autenticação:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-
     const response = {
       code: 'SERVER_ERROR',
       message: 'Erro interno no servidor',

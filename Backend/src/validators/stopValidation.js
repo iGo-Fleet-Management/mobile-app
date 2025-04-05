@@ -32,6 +32,36 @@ const addRoundTripSchema = Joi.object({
   }).required(),
 }).options({ stripUnknown: true });
 
+const addOnlyGoStopSchema = Joi.object({
+  date: Joi.date().iso().required().label('Data base da viagem'),
+  goStop: Joi.object({
+    address_id: Joi.string()
+      .pattern(uuidRegex)
+      .required()
+      .label('Endereço de ida'),
+    stop_date: Joi.date()
+      .iso()
+      .required()
+      .raw() // Mantém o formato original para validação posterior
+      .label('Data/hora de ida'),
+  })
+    .required()
+    .label('Parada de ida'),
+}).options({ stripUnknown: true });
+
+const addOnlyBackStopSchema = Joi.object({
+  date: Joi.date().iso().required().label('Data base da viagem'),
+  backStop: Joi.object({
+    address_id: Joi.string()
+      .pattern(uuidRegex)
+      .required()
+      .label('Endereço de volta'),
+    stop_date: Joi.date().iso().required().raw().label('Data/hora de volta'),
+  })
+    .required()
+    .label('Parada de volta'),
+}).options({ stripUnknown: true });
+
 const updateStopSchema = Joi.object({
   address_id: Joi.string().pattern(uuidRegex),
   stop_date: Joi.date().iso(),
@@ -46,6 +76,8 @@ module.exports = {
   stopParamsSchema,
   createStopSchema,
   addRoundTripSchema,
+  addOnlyGoStopSchema,
+  addOnlyBackStopSchema,
   updateStopSchema,
   checkAvailabilitySchema,
 };

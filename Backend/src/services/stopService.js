@@ -2,6 +2,7 @@ const { withTransaction } = require('./utilities/transactionHelper');
 const { validateStopRelations } = require('./utilities/stopValidator');
 const stopManager = require('./utilities/stopManager');
 const TripRepository = require('../repositories/tripRepository');
+const StopRepository = require('../repositories/stopRepository');
 
 exports.upsertStop = async (stopData, transaction) => {
   return withTransaction(transaction, async (t) => {
@@ -64,5 +65,60 @@ exports.addRoundTripStop = async (
     ]);
 
     return { goStop, backStop };
+  });
+};
+
+exports.addOnlyGoStop = async (userId, date, goStopData, options = {}) => {
+  return withTransaction(options.transaction, async (transaction) => {
+    //Encontrar uma viagem de ida
+    const goTrip = await TripRepository.findTripByDateAndType(date, 'ida', {
+      transaction,
+    });
+    if (!goTrip) throw new Error('Viagem de ida não encontrada');
+
+    //Preparar dados da parada
+    const goData = {
+      ...goStopData,
+      user_id: userId,
+      trip_id: goTrip.trip_id,
+    };
+    await validateStopRelations(goData, transaction);
+
+    const allowedTrips = [goTrip.trip_id];
+
+    // Remover paradas de outros tipos
+    await stopManager.deleteOtherStops(userId, allowedTrips, date, transaction);
+
+    // Criar/atualizar parada de ida
+    const goStop = await this.upsertStop(goData, transaction);
+    return { goStop };
+  });
+};
+
+exports.addOnlyBackStop = async (userId, date, backStopData, options = {}) => {
+  return withTransaction(options.transaction, async (transaction) => {
+    // Buscar viagem de VOLTA (corrigir tipo para 'volta')
+    const backTrip = await TripRepository.findTripByDateAndType(date, 'volta', {
+      transaction,
+    });
+    if (!backTrip) throw new Error('Viagem de volta não encontrada');
+
+    // Preparar dados da parada
+    const backData = {
+      ...backStopData,
+      user_id: userId,
+      trip_id: backTrip.trip_id,
+    };
+    await validateStopRelations(backData, transaction);
+
+    // IDs permitidos (apenas volta)
+    const allowedTrips = [backTrip.trip_id];
+
+    // Remover outras paradas (incluindo ida se existir)
+    await stopManager.deleteOtherStops(userId, allowedTrips, date, transaction);
+
+    // Upsert da parada de volta
+    const backStop = await this.upsertStop(backData, transaction);
+    return { backStop };
   });
 };
