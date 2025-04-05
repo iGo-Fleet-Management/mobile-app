@@ -14,6 +14,37 @@ router.use(authenticate);
 
 /**
  * @swagger
+ * /api/profile/get-all-users:
+ *   get:
+ *     summary: Obtém todos os usuários
+ *     description: Retorna uma lista de todos os usuários cadastrados no sistema.
+ *     tags:
+ *       - Profile
+ *     responses:
+ *       200:
+ *         description: Lista de usuários obtida com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                         example: 151bee6a-c53f-4e7a-90a8-c3771c5ae930
+ */
+router.get('/get-all-users', userController.getAllUsers);
+
+/**
+ * @swagger
  * /api/profile/delete-user/{id}:
  *   delete:
  *     summary: Exclui um usuário pelo ID

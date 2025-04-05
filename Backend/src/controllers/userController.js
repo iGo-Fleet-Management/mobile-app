@@ -38,3 +38,20 @@ exports.deleteUser = async (req, res) => {
     });
   }
 };
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await userService.getAllUsers();
+    res.status(200).json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    console.error('[Erro ao obter usuários]', error);
+    res.status(500).json({
+      success: false,
+      code: 'USER_RETRIEVAL_ERROR',
+      message: 'Erro ao obter usuários',
+    });
+  }
+};
