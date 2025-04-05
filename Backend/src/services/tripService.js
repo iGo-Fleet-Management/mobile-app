@@ -1,11 +1,11 @@
 const { DateTime } = require('luxon');
 const { Stop } = require('../models');
-const { withTransaction } = require('../repositories/baseRepository');
+const { withTransaction } = require('./utilities/transactionHelper');
 const sequelize = require('../config/db');
 const TripRepository = require('../repositories/tripRepository');
 
 exports.createDailyTrips = async (tripDate = new Date()) => {
-  return withTransaction(async (transaction) => {
+  return withTransaction(null, async (transaction) => {
     const zone = 'America/Sao_Paulo';
     const parsedDate = DateTime.fromJSDate(tripDate).setZone(zone);
     const now = DateTime.now().setZone(zone);

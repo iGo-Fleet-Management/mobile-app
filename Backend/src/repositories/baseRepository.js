@@ -35,6 +35,15 @@ class BaseRepository {
     return this.findById(id, options);
   }
 
+  async delete(id, options = {}) {
+    const affectedRows = await this.model.destroy({
+      where: { [this.model.primaryKeyAttribute]: id },
+      ...options,
+    });
+    if (affectedRows === 0) throw new Error('Registro não encontrado');
+    return true;
+  }
+
   async findAll(options = {}) {
     return this.model.findAll(options);
   }

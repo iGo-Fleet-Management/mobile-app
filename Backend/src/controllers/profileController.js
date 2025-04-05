@@ -1,8 +1,8 @@
-const userService = require('../services/userService');
+const profileService = require('../services/profileService');
 
 exports.getProfile = async (req, res) => {
   try {
-    const profile = await userService.getProfileById(req.user.user_id);
+    const profile = await profileService.getProfileById(req.user.user_id);
     res.status(200).json({
       success: true,
       data: profile,
@@ -16,33 +16,10 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// exports.completeRegistration = async (req, res) => {
-//   try {
-//     const { userData, addressUpdates } = req.body;
-//     const result = await userService.saveProfile(
-//       req.user.user_id,
-//       userData,
-//       addressUpdates,
-//       { isInitialCompletion: true }
-//     );
-
-//     res.status(200).json({
-//       success: true,
-//       data: result,
-//     });
-//   } catch (error) {
-//     res.status(400).json({
-//       success: false,
-//       code: 'PROFILE_COMPLETION_ERROR',
-//       message: this.translateProfileError(error.message),
-//     });
-//   }
-// };
-
 exports.updateProfile = async (req, res) => {
   try {
     const { userData } = req.body;
-    const result = await userService.saveProfile(req.user.user_id, userData);
+    const result = await profileService.saveProfile(req.user.user_id, userData);
 
     res.status(200).json({
       success: true,
@@ -61,7 +38,7 @@ exports.updateProfile = async (req, res) => {
 exports.updateAddresses = async (req, res) => {
   try {
     const { addressUpdates } = req.body;
-    const result = await userService.saveAddress(
+    const result = await profileService.saveAddress(
       req.user.user_id,
       addressUpdates
     );
@@ -84,7 +61,7 @@ exports.updateAddresses = async (req, res) => {
 exports.createProfile = async (req, res) => {
   try {
     const { userData, addressData } = req.body;
-    const result = await userService.createProfile(
+    const result = await profileService.createProfile(
       req.user.user_id,
       userData,
       addressData
@@ -100,44 +77,6 @@ exports.createProfile = async (req, res) => {
       success: false,
       code: 'PROFILE_UPDATE_ERROR',
       message: this.translateProfileError(error.message),
-    });
-  }
-};
-
-exports.deleteUser = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    // Validação básica do ID
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_USER_ID',
-        message: 'ID de usuário inválido',
-      });
-    }
-    await userService.deleteUser(userId);
-
-    res.status(200).json({
-      success: true,
-      message: 'Usuário excluído com sucesso',
-    });
-  } catch (error) {
-    // Tratamento específico para usuário não encontrado
-    if (
-      error.message === 'Usuário não encontrado' ||
-      error.message === 'Registro não encontrado'
-    ) {
-      return res.status(404).json({
-        success: false,
-        code: 'USER_NOT_FOUND',
-        message: error.message,
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      code: 'USER_DELETION_ERROR',
-      message: 'Erro ao deletar usuário',
     });
   }
 };

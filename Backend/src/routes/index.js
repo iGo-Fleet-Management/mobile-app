@@ -3,6 +3,8 @@ const authRoutes = require('./authRoutes');
 const profileRoutes = require('./profileRoutes');
 const forgotPasswordRoutes = require('./forgotPasswordRoutes');
 const tripRoutes = require('./tripRoutes');
+const stopRoutes = require('./stopRoutes');
+const userRoutes = require('./userRoutes');
 
 const router = express.Router();
 
@@ -16,6 +18,8 @@ router.use('/profile', profileRoutes);
 
 router.use('/trips', tripRoutes);
 
-router.use('/stops', require('./stopRoutes'));
+router.use('/stops', stopRoutes);
+
+router.use('/users', userRoutes);
 
 module.exports = router;
