@@ -1,5 +1,4 @@
 const TripService = require('../services/tripService');
-const { DateTime } = require('luxon'); // 👈 Importação faltando
 
 //tranformar essa função para buscar paradas
 exports.getTrip = async (req, res) => {

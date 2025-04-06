@@ -37,6 +37,11 @@ const Stop = sequelize.define(
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    is_released: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     tableName: 'stop', // Nome exato da tabela

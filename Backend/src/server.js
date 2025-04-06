@@ -11,7 +11,4 @@ startTripScheduler();
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(
-    `Usando timezone: America/Sao_Paulo via Luxon em todas as operações de data`
-  );
 });

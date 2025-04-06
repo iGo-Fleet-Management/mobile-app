@@ -1,6 +1,8 @@
+const { DateTime } = require('luxon');
 const { withTransaction } = require('./utilities/transactionHelper');
 const { validateStopRelations } = require('./utilities/stopValidator');
 const stopManager = require('./utilities/stopManager');
+const dateFormatter = require('./utilities/dateFormatter');
 const TripRepository = require('../repositories/tripRepository');
 
 exports.upsertStop = async (stopData, transaction) => {
@@ -119,5 +121,48 @@ exports.addOnlyBackStop = async (userId, date, backStopData, options = {}) => {
     // Upsert da parada de volta
     const backStop = await this.upsertStop(backData, transaction);
     return { backStop };
+  });
+};
+
+exports.updateIsReleased = async (userId, date, isReleased, options = {}) => {
+  return withTransaction(options.transaction, async (transaction) => {
+    const dateOnly = dateFormatter.toDateOnly(date);
+
+    // Verificar se a função retorna um único objeto ou uma lista
+    const backTrip = await TripRepository.findTripByDateAndType(
+      dateOnly,
+      'volta',
+      { transaction }
+    );
+
+    if (!backTrip) {
+      throw new Error('Viagem de volta não encontrada para esta data');
+    }
+
+    const tripId = backTrip?.trip_id;
+
+    if (!tripId) {
+      throw new Error('ID da viagem não encontrado');
+    }
+
+    // Encontrar parada de volta
+    const backStop = await stopManager.getExistingStop(
+      userId,
+      tripId,
+      transaction
+    );
+
+    if (!backStop) {
+      throw new Error('Parada de volta não encontrada');
+    }
+
+    // Atualizar is_released
+    const released = await stopManager.updateIsReleased(
+      backStop.stop_id,
+      isReleased,
+      transaction
+    );
+
+    return { released };
   });
 };

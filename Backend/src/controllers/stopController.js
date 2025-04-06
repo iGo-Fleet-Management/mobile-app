@@ -170,3 +170,32 @@ exports.addOnlyBackStop = async (req, res) => {
     });
   }
 };
+
+exports.updateIsReleased = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const isReleased = req.body.is_released;
+    const userId = req.user.user_id;
+
+    const result = await StopService.updateIsReleased(userId, date, isReleased);
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'Parada não encontrada',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Status de liberação atualizado com sucesso',
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao atualizar o status de liberação',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+};

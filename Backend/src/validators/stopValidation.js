@@ -72,6 +72,17 @@ const checkAvailabilitySchema = Joi.object({
   stop_date: Joi.date().iso().required(),
 });
 
+const isReleasedSchema = {
+  query: Joi.object({
+    date: Joi.string()
+      .isoDate()
+      .default(() => new Date().toISOString().split('T')[0]),
+  }),
+  body: Joi.object({
+    is_released: Joi.boolean().required(),
+  }),
+};
+
 module.exports = {
   stopParamsSchema,
   createStopSchema,
@@ -80,4 +91,5 @@ module.exports = {
   addOnlyBackStopSchema,
   updateStopSchema,
   checkAvailabilitySchema,
+  isReleasedSchema,
 };

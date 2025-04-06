@@ -3,13 +3,10 @@ const router = express.Router();
 const { validate } = require('../middlewares/validationMiddleware');
 const { authenticate } = require('../middlewares/authMiddleware');
 const {
-  createStopSchema,
-  updateStopSchema,
-  checkAvailabilitySchema,
-  stopParamsSchema,
   addRoundTripSchema,
   addOnlyGoStopSchema,
   addOnlyBackStopSchema,
+  isReleasedSchema,
 } = require('../validators/stopValidation');
 const controller = require('../controllers/stopController');
 
@@ -34,6 +31,12 @@ router.post(
   '/add-onlybacktrip-stop',
   validate(addOnlyBackStopSchema), // Valida o body
   controller.addOnlyBackStop
+);
+
+router.post(
+  '/update-is-released',
+  validate(isReleasedSchema),
+  controller.updateIsReleased
 );
 
 module.exports = router;

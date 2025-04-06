@@ -55,3 +55,11 @@ exports.upsertStop = async (stopData, transaction) => {
     return StopRepository.create(stopData, { transaction });
   }
 };
+
+exports.updateIsReleased = async (stopId, isReleased, transaction) => {
+  return StopRepository.update(
+    stopId,
+    { is_released: isReleased },
+    { transaction }
+  );
+};

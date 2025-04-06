@@ -12,10 +12,9 @@ class TripRepository extends BaseRepository {
   }
 
   async findTripByDateAndType(date, tripType, options = {}) {
-    const utcDate = date.toISOString().split('T')[0];
     return this.model.findOne({
       where: {
-        trip_date: utcDate,
+        trip_date: date,
         trip_type: tripType,
       },
       ...options,

@@ -6,7 +6,6 @@ async function clean() {
   } catch (error) {
     console.error('Erro ao limpar blacklist:', error);
   }
-  //console.log('Limpeza de blacklist concluída');
 }
 
 function startBlacklistCleanup() {
