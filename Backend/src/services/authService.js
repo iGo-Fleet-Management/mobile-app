@@ -51,7 +51,7 @@ exports.login = async (email, password) => {
 
   return {
     token,
-    reset_password: user.reset_password,
+    user_type: user.user_type,
   };
 };
 

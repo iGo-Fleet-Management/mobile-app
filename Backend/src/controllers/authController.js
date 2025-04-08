@@ -41,6 +41,7 @@ exports.login = async (req, res) => {
       data: {
         token: result.token,
         reset_password: result.reset_password,
+        user_type: result.user_type,
       },
     });
   } catch (error) {

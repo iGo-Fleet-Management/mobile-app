@@ -8,12 +8,10 @@ const userRoutes = require('./userRoutes');
 
 const router = express.Router();
 
-// Agrupamento de rotas de autenticação
 router.use('/auth', authRoutes);
 
 router.use('/auth', forgotPasswordRoutes);
 
-// Agrupamento de rotas de perfil
 router.use('/profile', profileRoutes);
 
 router.use('/trips', tripRoutes);

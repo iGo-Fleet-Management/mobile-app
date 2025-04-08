@@ -6,7 +6,7 @@ const { authenticate } = require('../middlewares/authMiddleware');
  * @swagger
  * tags:
  *   name: User
- *   description: Endpoints para gerenciamento de perfis de usuários
+ *   description: Endpoints para gerenciamento usuários
  */
 const router = express.Router();
 
@@ -14,12 +14,12 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/profile/get-all-users:
+ * /api/user/get-all-users:
  *   get:
  *     summary: Obtém todos os usuários
  *     description: Retorna uma lista de todos os usuários cadastrados no sistema.
  *     tags:
- *       - Profile
+ *       - User
  *     responses:
  *       200:
  *         description: Lista de usuários obtida com sucesso
@@ -45,12 +45,12 @@ router.get('/get-all-users', userController.getAllUsers);
 
 /**
  * @swagger
- * /api/profile/delete-user/{id}:
+ * /api/user/delete-user/{id}:
  *   delete:
  *     summary: Exclui um usuário pelo ID
  *     description: Remove permanentemente um usuário do sistema utilizando seu UUID único.
  *     tags:
- *       - Profile
+ *       - User
  *     parameters:
  *       - in: path
  *         name: id
