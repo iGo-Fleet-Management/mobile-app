@@ -83,6 +83,10 @@ exports.addOnlyGoStop = async (userId, date, goStopData, options = {}) => {
       user_id: userId,
       trip_id: goTrip.trip_id,
     };
+
+    console.log('\n================');
+    console.log('goData: ', goData);
+
     await validateStopRelations(goData, transaction);
 
     const allowedTrips = [goTrip.trip_id];
@@ -110,6 +114,9 @@ exports.addOnlyBackStop = async (userId, date, backStopData, options = {}) => {
       user_id: userId,
       trip_id: backTrip.trip_id,
     };
+    console.log('\n================');
+    console.log('backData: ', backData);
+
     await validateStopRelations(backData, transaction);
 
     // IDs permitidos (apenas volta)
@@ -121,6 +128,67 @@ exports.addOnlyBackStop = async (userId, date, backStopData, options = {}) => {
     // Upsert da parada de volta
     const backStop = await this.upsertStop(backData, transaction);
     return { backStop };
+  });
+};
+
+exports.removeStop = async (
+  userId,
+  date,
+  goStopDate,
+  backStopDate,
+  options = {}
+) => {
+  return withTransaction(options.transaction, async (transaction) => {
+    // Buscar viagens de ida e volta
+    const [goTrip, backTrip] = await Promise.all([
+      TripRepository.findTripByDateAndType(date, 'ida', { transaction }),
+      TripRepository.findTripByDateAndType(date, 'volta', { transaction }),
+    ]);
+
+    if (!goTrip || !backTrip) {
+      throw new Error(
+        'Viagens de ida e/ou volta não encontradas para esta data'
+      );
+    }
+
+    // Preparar dados das paradas
+    const baseData = { user_id: userId };
+    const goData = {
+      ...baseData,
+      ...goStopDate,
+      trip_id: goTrip.trip_id,
+    };
+    const backData = {
+      ...baseData,
+      ...backStopDate,
+      trip_id: backTrip.trip_id,
+    };
+
+    console.log('\n================');
+    console.log('goData: ', goData);
+    console.log('backData: ', backData);
+
+    // Validar relações
+    await Promise.all([
+      validateStopRelations(goData, transaction),
+      validateStopRelations(backData, transaction),
+    ]);
+
+    // Remover paradas de outros tipos
+    const result = await stopManager.removeStops(
+      userId,
+      [goTrip.trip_id, backTrip.trip_id],
+      date,
+      transaction
+    );
+
+    // // Processar paradas de ida e volta
+    // const [goStop, backStop] = await Promise.all([
+    //   stopManager.removeStops(goData, transaction),
+    //   stopManager.removeStops(backData, transaction),
+    // ]);
+
+    return { result };
   });
 };
 

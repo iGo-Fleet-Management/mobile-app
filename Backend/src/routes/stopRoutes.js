@@ -143,6 +143,12 @@ router.post(
   controller.addOnlyBackStop
 );
 
+router.delete(
+  '/remove-stops',
+  validate(addRoundTripSchema),
+  controller.removeTripStops
+);
+
 /**
  * @swagger
  * /update-is-released:

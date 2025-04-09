@@ -46,7 +46,7 @@ exports.login = async (email, password) => {
       reset_password: user.reset_password,
     },
     JWT_SECRET,
-    { expiresIn: '1h' }
+    { expiresIn: '30d' }
   );
 
   return {

@@ -36,6 +36,9 @@ class BaseRepository {
   }
 
   async delete(id, options = {}) {
+    console.log('\n==================');
+    console.log('id: ', id);
+    console.log('options: ', options);
     const affectedRows = await this.model.destroy({
       where: { [this.model.primaryKeyAttribute]: id },
       ...options,

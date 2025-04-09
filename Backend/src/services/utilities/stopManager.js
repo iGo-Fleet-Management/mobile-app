@@ -29,7 +29,33 @@ exports.deleteOtherStops = async (
 
   if (trips.length === 0) return;
 
-  return StopRepository.deleteUserStopsForTrips(
+  return StopRepository.deleteUserOtherStopsForTrips(
+    userId,
+    date,
+    trips.map((t) => t.trip_id),
+    transaction
+  );
+};
+
+exports.removeStops = async (userId, allowedTripIds, date, transaction) => {
+  console.log('\n======================');
+  console.log('Entrou no Manager');
+  console.log('userId: ', userId);
+  console.log('allowedTripIds: ', allowedTripIds);
+  console.log('date: ', date);
+  console.log('======================\n');
+  const trips = await TripRepository.findAll({
+    where: {
+      trip_date: date,
+      trip_id: { [Op.in]: allowedTripIds },
+    },
+    attributes: ['trip_id'],
+    transaction,
+  });
+
+  if (trips.length === 0) return;
+
+  return StopRepository.removeAllUserStops(
     userId,
     trips.map((t) => t.trip_id),
     transaction

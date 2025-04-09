@@ -33,7 +33,18 @@ class StopRepository extends BaseRepository {
     });
   }
 
-  async deleteUserStopsForTrips(userId, tripIds, transaction) {
+  async deleteUserOtherStopsForTrips(userId, date, tripIds, transaction) {
+    return this.model.destroy({
+      where: {
+        user_id: userId,
+        stop_date: date,
+        trip_id: { [Op.in]: tripIds },
+      },
+      transaction,
+    });
+  }
+
+  async removeAllUserStops(userId, tripIds, transaction) {
     return this.model.destroy({
       where: {
         user_id: userId,
