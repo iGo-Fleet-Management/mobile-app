@@ -13,7 +13,7 @@ import MapContainer from '../../components/home/MapContainer';
 import BottomUserBar from '../../components/home/BottomUserBar';
 
 export default function HomeScreen({ navigation }) {
-  const [travelMode, setTravelMode] = useState('roundTrip');
+  const [travelMode, setTravelMode] = useState(null);
   const [isLiberado, setIsLiberado] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [pendingTravelMode, setPendingTravelMode] = useState(null);
