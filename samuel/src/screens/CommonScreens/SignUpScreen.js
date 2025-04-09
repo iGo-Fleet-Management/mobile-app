@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+/* import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
 export default function SignUpScreen({ navigation }) {
@@ -198,3 +198,4 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
+ */

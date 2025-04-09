@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 // Import Auth Screens
 import LoginScreen from '../screens/CommonScreens/LoginScreen';
 import ForgotPasswordScreen from '../screens/CommonScreens/ForgotPasswordScreen';
-import SignUpScreen from '../screens/CommonScreens/SignUpScreen';
+//import SignUpScreen from '../screens/CommonScreens/SignUpScreen';
 import ResetPasswordScreen from '../screens/CommonScreens/ResetPasswordScreen';
 
 import PassengerProfileScreen from '../screens/PassengerScreens/PassengerProfileScreen';
@@ -34,7 +34,7 @@ const StackNavigator = () => {
         {/* Auth Screens */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        {/* <Stack.Screen name="SignUp" component={SignUpScreen} /> */}
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
 
         {/* Profile Screens - These will slide in from the right */}

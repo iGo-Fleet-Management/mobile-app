@@ -74,12 +74,12 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.buttonText}>Entrar</Text>
       </TouchableOpacity>
 
-      <View style={styles.signupContainer}>
+      {/* <View style={styles.signupContainer}>
         <Text style={styles.signupText}>Não tem uma conta? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
           <Text style={styles.signupLink}>Cadastre-se</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
   },
-  signupContainer: {
+  /* signupContainer: {
     flexDirection: 'row',
     marginTop: 20,
   },
@@ -152,5 +152,5 @@ const styles = StyleSheet.create({
   signupLink: {
     color: '#007BFF',
     fontWeight: 'bold',
-  },
+  }, */
 });
