@@ -14,7 +14,7 @@ const AddPassengerButton = ({ onPress }) => {
 
 const styles = StyleSheet.create({
   addButton: {
-    backgroundColor: '#3f51b5',
+    backgroundColor: '#4285F4',
     padding: 15,
     alignItems: 'center',
   },

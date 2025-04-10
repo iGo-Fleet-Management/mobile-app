@@ -24,15 +24,26 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
+    // Usuário passageiro normal
     if (email === 'passenger@gmail.com'){
       navigation.navigate('PassengerHomeScreen');
+      return;
     }
 
+    // Usuário motorista
     if (email === 'driver@gmail.com'){
       navigation.navigate('DriverHomeScreen');
+      return;
     }
 
-    // Navigate to Main instead of Dashboard
+    // Novo usuário que precisa completar cadastro
+    if (email === 'novo@gmail.com'){
+      navigation.navigate('FirstLogin');
+      return;
+    }
+
+    // Usuário não reconhecido
+    Alert.alert("Erro", "Credenciais inválidas. Tente novamente.");
   };
 
   return (

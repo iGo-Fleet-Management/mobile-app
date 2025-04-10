@@ -24,8 +24,8 @@ const DriverHomeScreen = () => {
   };
   
   const handleStartTrip = () => {
-    // Navegação para a tela de trajeto ativo
-    navigation.navigate('ActiveTrip');
+    // Navegação para a tela de rota sugerida
+    navigation.navigate('SuggestedRoute');
   };
   
   const handleProfilePress = () => {
