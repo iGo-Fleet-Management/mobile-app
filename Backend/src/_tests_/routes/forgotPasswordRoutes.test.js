@@ -28,6 +28,14 @@ describe('Forgot Password Routes', () => {
           success: true,
           message: 'Email de recuperação enviado com sucesso'
         });
+      }),
+      // Adicionar o controller para reset-password-token
+      resetPasswordWithToken: jest.fn((req, res) => {
+        // Comportamento padrão: reset de senha bem-sucedido
+        res.status(200).json({
+          success: true,
+          message: 'Senha redefinida com sucesso'
+        });
       })
     };
     
@@ -51,6 +59,8 @@ describe('Forgot Password Routes', () => {
     // Definir manualmente as rotas que queremos testar
     router.post('/reset-password', authMiddleware.authenticate, forgotPasswordController.resetPasswordFirstLogin);
     router.post('/forgot-password', validate({}), forgotPasswordController.requestPasswordReset);
+    // Adicionar a rota de reset-password-token
+    router.post('/reset-password-token', validate({}), forgotPasswordController.resetPasswordWithToken);
     
     app.use('/forgot-password', router);
   });
@@ -245,6 +255,153 @@ describe('Forgot Password Routes', () => {
       expect(response.body).toEqual({
         success: true,
         message: 'Email de recuperação enviado com sucesso'
+      });
+    });
+  });
+
+  // Adicionar bloco de testes para reset-password-token
+  describe('POST /forgot-password/reset-password-token', () => {
+    test('deve redefinir a senha quando um token válido é fornecido', async () => {
+      const resetData = {
+        token: 'token-valido',
+        password: 'NovaSenha123',
+        confirmPassword: 'NovaSenha123'
+      };
+
+      const response = await request(app)
+        .post('/forgot-password/reset-password-token')
+        .send(resetData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toEqual({
+        success: true,
+        message: 'Senha redefinida com sucesso'
+      });
+
+      expect(forgotPasswordController.resetPasswordWithToken).toHaveBeenCalledTimes(1);
+      expect(forgotPasswordController.resetPasswordWithToken).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: resetData
+        }),
+        expect.any(Object),
+        expect.any(Function)
+      );
+    });
+
+    test('deve retornar erro quando o token é inválido', async () => {
+      // Sobrescreve a implementação do mock para simular token inválido
+      forgotPasswordController.resetPasswordWithToken.mockImplementation((req, res) => {
+        res.status(400).json({
+          success: false,
+          code: 'INVALID_TOKEN',
+          message: 'Token inválido ou expirado'
+        });
+      });
+
+      const resetData = {
+        token: 'token-invalido',
+        password: 'NovaSenha123',
+        confirmPassword: 'NovaSenha123'
+      };
+
+      const response = await request(app)
+        .post('/forgot-password/reset-password-token')
+        .send(resetData)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toEqual({
+        success: false,
+        code: 'INVALID_TOKEN',
+        message: 'Token inválido ou expirado'
+      });
+    });
+
+    test('deve retornar erro quando as senhas não coincidem', async () => {
+      // Sobrescreve a implementação do mock para simular senhas que não coincidem
+      forgotPasswordController.resetPasswordWithToken.mockImplementation((req, res) => {
+        res.status(400).json({
+          success: false,
+          code: 'PASSWORDS_DONT_MATCH',
+          message: 'A senha e a confirmação não coincidem'
+        });
+      });
+
+      const resetData = {
+        token: 'token-valido',
+        password: 'NovaSenha123',
+        confirmPassword: 'SenhaDiferente123'
+      };
+
+      const response = await request(app)
+        .post('/forgot-password/reset-password-token')
+        .send(resetData)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toEqual({
+        success: false,
+        code: 'PASSWORDS_DONT_MATCH',
+        message: 'A senha e a confirmação não coincidem'
+      });
+    });
+
+    test('deve retornar erro quando os campos obrigatórios estão faltando', async () => {
+      // Sobrescreve a implementação do mock para simular erro de validação
+      forgotPasswordController.resetPasswordWithToken.mockImplementation((req, res) => {
+        res.status(400).json({
+          success: false,
+          code: 'VALIDATION_ERROR',
+          message: 'Todos os campos são obrigatórios'
+        });
+      });
+
+      // Envio de dados incompletos
+      const resetData = {
+        token: 'token-valido'
+        // Faltando campos password e confirmPassword
+      };
+
+      const response = await request(app)
+        .post('/forgot-password/reset-password-token')
+        .send(resetData)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toEqual({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Todos os campos são obrigatórios'
+      });
+    });
+
+    test('deve retornar erro quando a senha é fraca', async () => {
+      // Sobrescreve a implementação do mock para simular erro de senha fraca
+      forgotPasswordController.resetPasswordWithToken.mockImplementation((req, res) => {
+        res.status(400).json({
+          success: false,
+          code: 'WEAK_PASSWORD',
+          message: 'A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais'
+        });
+      });
+
+      const resetData = {
+        token: 'token-valido',
+        password: '123',
+        confirmPassword: '123'
+      };
+
+      const response = await request(app)
+        .post('/forgot-password/reset-password-token')
+        .send(resetData)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toEqual({
+        success: false,
+        code: 'WEAK_PASSWORD',
+        message: 'A senha deve ter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais'
       });
     });
   });
