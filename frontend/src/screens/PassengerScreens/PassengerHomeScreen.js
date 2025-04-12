@@ -11,6 +11,10 @@ import StatusSwitch from '../../components/home/StatusSwitch';
 import AlertBox from '../../components/home/AlertBox';
 import MapContainer from '../../components/home/MapContainer';
 import BottomUserBar from '../../components/home/BottomUserBar';
+import Button from '../../components/common/Button';
+
+// Styles
+import { colors, spacing, typography, shadows, borders } from '../../styles/globalStyles';
 
 export default function HomeScreen({ navigation }) {
   const [travelMode, setTravelMode] = useState(null);
@@ -131,19 +135,19 @@ export default function HomeScreen({ navigation }) {
               </Text>
               
               <View style={styles.modalButtons}>
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.cancelButton]} 
+                <Button 
+                  title="Cancelar"
+                  variant="outline"
                   onPress={cancelChange}
-                >
-                  <Text style={styles.cancelButtonText}>Cancelar</Text>
-                </TouchableOpacity>
+                  style={styles.modalButton}
+                />
                 
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.confirmButton]} 
+                <Button 
+                  title="Confirmar"
+                  variant="primary"
                   onPress={confirmChange}
-                >
-                  <Text style={styles.confirmButtonText}>Confirmar</Text>
-                </TouchableOpacity>
+                  style={styles.modalButton}
+                />
               </View>
             </View>
           </View>
@@ -206,57 +210,37 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.modalBackground,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.lg,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 20,
+    backgroundColor: colors.card,
+    borderRadius: borders.radius.lg,
+    padding: spacing.lg,
     width: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    maxWidth: 400,
+    ...shadows.lg,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    ...typography.h3,
+    marginBottom: spacing.md,
     textAlign: 'center',
   },
   modalMessage: {
-    fontSize: 16,
-    marginBottom: 20,
+    ...typography.body1,
+    marginBottom: spacing.lg,
     textAlign: 'center',
-    lineHeight: 22,
+    color: colors.gray[700],
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: spacing.md,
   },
   modalButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 4,
-    alignItems: 'center',
-    margin: 5,
-  },
-  cancelButton: {
-    backgroundColor: '#f1f1f1',
-  },
-  confirmButton: {
-    backgroundColor: '#3f51b5',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '500',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontWeight: '500',
+    marginHorizontal: spacing.xs,
   },
 });

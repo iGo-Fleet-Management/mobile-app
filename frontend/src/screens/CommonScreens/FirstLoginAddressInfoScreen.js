@@ -154,10 +154,18 @@ const FirstLoginAddressInfoScreen = ({ route }) => {
         [
           { 
             text: "OK", 
-            onPress: () => navigation.reset({
-              index: 0,
-              routes: [{ name: 'PassengerHomeScreen' }],
-            })
+            onPress: () => {
+              // Usando reset para limpar a pilha de navegação e garantir que o usuário não volte para as telas de cadastro
+              navigation.reset({
+                index: 0,
+                routes: [
+                  { 
+                    name: 'PassengerHomeScreen',
+                    params: { userData: completeUserData }
+                  }
+                ],
+              });
+            }
           }
         ]
       );
