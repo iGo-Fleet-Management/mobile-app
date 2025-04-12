@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { colors, spacing, typography } from '../../styles/globalStyles';
 
-const Input = ({
+const InputText = forwardRef(({
   label,
   value,
   onChangeText,
@@ -16,7 +16,7 @@ const Input = ({
   style,
   inputStyle,
   ...props
-}) => {
+}, ref) => {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -27,6 +27,7 @@ const Input = ({
         loading && styles.inputLoading
       ]}>
         <TextInput
+          ref={ref}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -38,6 +39,7 @@ const Input = ({
           style={[
             styles.input,
             disabled && styles.textDisabled,
+            error ? styles.inputError : null,
             inputStyle
           ]}
           {...props}
@@ -46,7 +48,7 @@ const Input = ({
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -89,4 +91,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Input; 
+export default InputText; 

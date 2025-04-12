@@ -1,30 +1,194 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { API_IGO } from '@env';
+import { checkAuthAndRedirect, authHeader, getToken } from '../../auth/AuthService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { InputCpf } from '../../components/common/InputCpf';
+import { InputPhone } from '../../components/common/InputPhone';
+import { InputDate } from '../../components/common/InputDate';
 
-const EditProfileScreen = ({ navigation, route }) => {
+export default function EditProfileScreen({ navigation, route }) {
   const [formData, setFormData] = useState({
-    nome: 'John',
-    sobrenome: 'Doe',
-    cpf: '123.456.789-10',
-    dataNascimento: '02/09/2003',
-    email: 'johndoe@gmail.com',
-    telefone: '(31) 9 1234-5678',
+    name: '',
+    last_name: '',
+    cpf: '',
+    birthdate: '',
+    email: '',
+    phone: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const checkAuthAndFetchProfile = async () => {
+      // First, log to check if we have a token
+      const token = await getToken();
+      console.log('Current token in EditProfileScreen:', token);
+      
+      const isAuth = await checkAuthAndRedirect(navigation);
+      if (isAuth) {
+        fetchUserProfile();
+      }
+    };
+    
+    checkAuthAndFetchProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    setLoading(true);
+    try {
+      const headers = await authHeader();
+      console.log('Request headers:', headers);
+      
+      const response = await fetch(`${API_IGO}profile`, {
+        method: 'GET',
+        headers
+      });
+
+      console.log('Profile response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Profile response data:', data);
+
+      if (response.ok) {
+        console.log('Profile data retrieved successfully');
+        setFormData({
+          name: data.name || '',
+          last_name: data.last_name || '',
+          cpf: data.cpf || '',
+          birthdate: data.birthdate || '',
+          email: data.email || '',
+          phone: data.phone || '',
+        });
+      } else {
+        console.error('Error fetching profile - Status:', response.status);
+        
+        if (response.status === 401) {
+          // Try to read token again to see if it's still there
+          const token = await AsyncStorage.getItem('userToken');
+          console.log('Token check after 401:', token ? 'Token exists' : 'No token');
+          
+          // Token expired or invalid
+          checkAuthAndRedirect(navigation);
+        } else {
+          Alert.alert('Erro', data.message || 'Erro ao carregar perfil.');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      Alert.alert('Erro', 'Ocorreu um problema ao carregar os dados do perfil.');
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
+    }
+  };
 
   const handleChange = (field, value) => {
+    // Clear the error for this field when the user makes changes
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    // Save the data and navigate back
-    navigation.goBack();
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Nome é obrigatório';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email inválido';
+    }
+    
+    if (formData.cpf && formData.cpf.length !== 11) {
+      newErrors.cpf = 'CPF inválido';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      Alert.alert('Erro', 'Por favor, corrija os erros no formulário.');
+      return;
+    }
+    
+    console.log('Sending profile data:', JSON.stringify(formData, null, 2));
+    
+    setLoading(true);
+    try {
+      const headers = await authHeader();
+      
+      // Create a copy of the form data to ensure not undefined values
+      const dataToSend = Object.fromEntries(
+        Object.entries(formData).filter(([_, v]) => v !== undefined)
+      );
+      
+      console.log('Data being sent to API:', JSON.stringify(dataToSend, null, 2));
+      
+      const response = await fetch(`${API_IGO}profile/update-profile`, {
+        method: 'PUT',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dataToSend)
+      });
+
+      console.log('Update profile response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Update profile response data:', data);
+
+      if (response.ok) {
+        Alert.alert(
+          'Sucesso', 
+          'Perfil atualizado com sucesso!',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        if (response.status === 401) {
+          // Token expired or invalid
+          console.log('401 error when updating profile');
+          
+          // Try to read token again to see if it's still there
+          const token = await AsyncStorage.getItem('userToken');
+          console.log('Token check after 401:', token ? 'Token exists' : 'No token');
+          
+          checkAuthAndRedirect(navigation);
+        } else {
+          Alert.alert('Erro', data.message || 'Erro ao atualizar perfil.');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Erro', 'Ocorreu um problema ao atualizar os dados do perfil.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddressesPress = () => {
     navigation.navigate('EditAddresses');
   };
+
+  if (initialLoad) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#4285F4" />
+        <Text style={styles.loadingText}>Carregando dados do perfil...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -32,56 +196,77 @@ const EditProfileScreen = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialIcons name="chevron-left" size={30} color="black" />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Editar Perfil</Text>
+        <View style={{ width: 30 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.formContainer}>
-          <Text style={styles.fieldLabel}>Nome</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.nome}
-            onChangeText={(text) => handleChange('nome', text)}
-          />
+          <Text style={styles.fieldLabel}>Nome *</Text>
+          <View style={[styles.inputContainer, errors.name && styles.inputError]}>
+            <TextInput
+              style={styles.input}
+              value={formData.name}
+              onChangeText={(text) => handleChange('name', text)}
+              placeholder="Digite seu nome"
+            />
+            {errors.name && (
+              <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+            )}
+          </View>
+          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
           <Text style={styles.fieldLabel}>Sobrenome</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.sobrenome}
-            onChangeText={(text) => handleChange('sobrenome', text)}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={formData.last_name}
+              onChangeText={(text) => handleChange('last_name', text)}
+              placeholder="Digite seu sobrenome"
+            />
+          </View>
 
-          <Text style={styles.fieldLabel}>CPF</Text>
-          <TextInput
-            style={styles.input}
+          <InputCpf
+            label="CPF"
             value={formData.cpf}
             onChangeText={(text) => handleChange('cpf', text)}
-            keyboardType="numeric"
+            placeholder="123.456.789-10"
+            error={errors.cpf}
           />
 
-          <Text style={styles.fieldLabel}>Data de Nascimento</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.dataNascimento}
-            onChangeText={(text) => handleChange('dataNascimento', text)}
+          <InputDate
+            label="Data de Nascimento"
+            value={formData.birthdate}
+            onChangeText={(text) => handleChange('birthdate', text)}
             placeholder="DD/MM/AAAA"
+            error={errors.birthdate}
           />
 
-          <Text style={styles.fieldLabel}>E-mail</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => handleChange('email', text)}
-            keyboardType="email-address"
-            autoCapitalize="none"
+          <Text style={styles.fieldLabel}>E-mail *</Text>
+          <View style={[styles.inputContainer, errors.email && styles.inputError]}>
+            <TextInput
+              style={styles.input}
+              value={formData.email}
+              onChangeText={(text) => handleChange('email', text)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="seuemail@exemplo.com"
+            />
+            {errors.email && (
+              <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+            )}
+          </View>
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+
+          <InputPhone
+            label="Telefone"
+            value={formData.phone}
+            onChangeText={(text) => handleChange('phone', text)}
+            placeholder="(00) 00000-0000"
+            error={errors.phone}
           />
 
-          <Text style={styles.fieldLabel}>Telefone</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.telefone}
-            onChangeText={(text) => handleChange('telefone', text)}
-            keyboardType="phone-pad"
-          />
+          <Text style={styles.noteText}>* Campos obrigatórios</Text>
 
           <TouchableOpacity 
             style={styles.addressesButton} 
@@ -91,27 +276,46 @@ const EditProfileScreen = ({ navigation, route }) => {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.saveButton} 
+            style={[styles.saveButton, loading && styles.disabledButton]} 
             onPress={handleSave}
+            disabled={loading}
           >
-            <Text style={styles.saveButtonText}>Salvar Perfil</Text>
+            <Text style={styles.saveButtonText}>
+              {loading ? 'Salvando...' : 'Salvar Perfil'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 15,
     height: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   backButton: {
     padding: 5,
@@ -127,14 +331,37 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     color: '#333',
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
     height: 48,
     paddingHorizontal: 10,
     marginBottom: 15,
+  },
+  input: {
+    flex: 1,
     fontSize: 16,
+    height: '100%',
+  },
+  inputError: {
+    borderColor: '#FF3B30',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 15,
+  },
+  errorIcon: {
+    marginLeft: 10,
+  },
+  noteText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 15,
   },
   addressesButton: {
     backgroundColor: '#4285F4',
@@ -160,6 +387,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  disabledButton: {
+    backgroundColor: '#a0c4ff',
+  },
 });
-
-export default EditProfileScreen;

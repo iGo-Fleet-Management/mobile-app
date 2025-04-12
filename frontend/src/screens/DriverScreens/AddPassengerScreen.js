@@ -13,15 +13,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_IGO } from '@env';
 
-const AddPassengerScreen = () => {
+export default function AddPassengerScreen() {
   const navigation = useNavigation();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [name, setName] = useState('');
+  const [last_name, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetPasswordOnFirstLogin, setResetPasswordOnFirstLogin] = useState(true);
+  const [reset_password, setResetPassword] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -30,13 +31,13 @@ const AddPassengerScreen = () => {
     const newErrors = {};
 
     // Validate first name
-    if (!firstName.trim()) {
-      newErrors.firstName = 'Nome é obrigatório';
+    if (!name.trim()) {
+      newErrors.name = 'Nome é obrigatório';
     }
 
     // Validate last name
-    if (!lastName.trim()) {
-      newErrors.lastName = 'Sobrenome é obrigatório';
+    if (!last_name.trim()) {
+      newErrors.last_name = 'Sobrenome é obrigatório';
     }
 
     // Validate email
@@ -65,23 +66,42 @@ const AddPassengerScreen = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      // Dados válidos, prosseguir com o cadastro
-      const newPassenger = {
-        firstName,
-        lastName,
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_IGO}auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          last_name,
+          email,
+          password,
+          reset_password
+        }),
+      });
+
+      const addPassengerResponse = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Sucesso', 'Passageiro adicionado com sucesso!');
+        navigation.navigate('DriverHomeScreen', { screen: 'Passageiros' });
+      } else {
+        Alert.alert('Erro', addPassengerResponse.data.message || 'Erro ao adicionar passageiro.');
+      }
+    } catch (error) {
+      console.error('Error adding passenger:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao adicionar o passageiro.');
+      
+      console.log('Novo passageiro:', {
+        name,
+        last_name,
         email,
         password,
-        resetPasswordOnFirstLogin
-      };
-      
-      console.log('Novo passageiro:', newPassenger);
-      
-      // Voltar para a tela anterior passando os dados do novo passageiro
-      navigation.navigate('DriverHomeScreen', {
-        screen: 'Passageiros',
-        params: { newPassenger }
+        reset_password
       });
     }
   };
@@ -98,8 +118,8 @@ const AddPassengerScreen = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const toggleResetPasswordOnFirstLogin = () => {
-    setResetPasswordOnFirstLogin(!resetPasswordOnFirstLogin);
+  const toggleResetPassword = () => {
+    setResetPassword(!reset_password);
   };
 
   return (
@@ -120,28 +140,28 @@ const AddPassengerScreen = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Nome</Text>
               <TextInput
-                style={[styles.input, errors.firstName ? styles.inputError : null]}
-                value={firstName}
-                onChangeText={setFirstName}
+                style={[styles.input, errors.name ? styles.inputError : null]}
+                value={name}
+                onChangeText={setName}
                 placeholder="Digite o nome"
                 autoCapitalize="words"
               />
-              {errors.firstName && (
-                <Text style={styles.errorText}>{errors.firstName}</Text>
+              {errors.name && (
+                <Text style={styles.errorText}>{errors.name}</Text>
               )}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Sobrenome</Text>
               <TextInput
-                style={[styles.input, errors.lastName ? styles.inputError : null]}
-                value={lastName}
+                style={[styles.input, errors.last_name ? styles.inputError : null]}
+                value={last_name}
                 onChangeText={setLastName}
                 placeholder="Digite o sobrenome"
                 autoCapitalize="words"
               />
-              {errors.lastName && (
-                <Text style={styles.errorText}>{errors.lastName}</Text>
+              {errors.last_name && (
+                <Text style={styles.errorText}>{errors.last_name}</Text>
               )}
             </View>
 
@@ -210,10 +230,10 @@ const AddPassengerScreen = () => {
 
             <TouchableOpacity 
               style={styles.checkboxContainer}
-              onPress={toggleResetPasswordOnFirstLogin}
+              onPress={toggleResetPassword}
             >
-              <View style={[styles.checkbox, resetPasswordOnFirstLogin && styles.checkboxSelected]}>
-                {resetPasswordOnFirstLogin && <MaterialIcons name="check" size={16} color="#fff" />}
+              <View style={[styles.checkbox, reset_password && styles.checkboxSelected]}>
+                {reset_password && <MaterialIcons name="check" size={16} color="#fff" />}
               </View>
               <Text style={styles.checkboxLabel}>Redefinir senha no primeiro login</Text>
             </TouchableOpacity>
@@ -229,7 +249,7 @@ const AddPassengerScreen = () => {
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
-};
+}
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -344,5 +364,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-export default AddPassengerScreen; 
