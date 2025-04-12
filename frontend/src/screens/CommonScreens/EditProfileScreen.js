@@ -11,12 +11,14 @@ import { InputDate } from '../../components/common/InputDate';
 
 export default function EditProfileScreen({ navigation, route }) {
   const [formData, setFormData] = useState({
-    name: '',
-    last_name: '',
-    cpf: '',
-    birthdate: '',
-    email: '',
-    phone: '',
+    userData: {
+      name: '',
+      last_name: '',
+      cpf: '',
+      birthdate: '',
+      email: '',
+      phone: '',
+    }
   });
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -24,9 +26,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
-      // First, log to check if we have a token
       const token = await getToken();
-      console.log('Current token in EditProfileScreen:', token);
       
       const isAuth = await checkAuthAndRedirect(navigation);
       if (isAuth) {
@@ -41,27 +41,26 @@ export default function EditProfileScreen({ navigation, route }) {
     setLoading(true);
     try {
       const headers = await authHeader();
-      console.log('Request headers:', headers);
       
       const response = await fetch(`${API_IGO}profile`, {
         method: 'GET',
         headers
       });
-
-      console.log('Profile response status:', response.status);
       
-      const data = await response.json();
-      console.log('Profile response data:', data);
-
-      if (response.ok) {
-        console.log('Profile data retrieved successfully');
+      const responseData = await response.json();
+      
+      if (response.ok && responseData.success) {
+        const userData = responseData.data;
+        
         setFormData({
-          name: data.name || '',
-          last_name: data.last_name || '',
-          cpf: data.cpf || '',
-          birthdate: data.birthdate || '',
-          email: data.email || '',
-          phone: data.phone || '',
+          userData: {
+            name: userData.name || '',
+            last_name: userData.last_name || '',
+            cpf: userData.cpf || '',
+            birthdate: userData.birthdate || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+          }
         });
       } else {
         console.error('Error fetching profile - Status:', response.status);
@@ -74,7 +73,7 @@ export default function EditProfileScreen({ navigation, route }) {
           // Token expired or invalid
           checkAuthAndRedirect(navigation);
         } else {
-          Alert.alert('Erro', data.message || 'Erro ao carregar perfil.');
+          Alert.alert('Erro', responseData.message || 'Erro ao carregar perfil.');
         }
       }
     } catch (error) {
@@ -92,23 +91,30 @@ export default function EditProfileScreen({ navigation, route }) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
     
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Atualiza o campo dentro do objeto userData
+    setFormData(prev => ({
+      userData: {
+        ...prev.userData,
+        [field]: value
+      }
+    }));
   };
 
   const validateForm = () => {
     const newErrors = {};
+    const { userData } = formData; 
     
-    if (!formData.name.trim()) {
+    if (!userData.name.trim()) {
       newErrors.name = 'Nome é obrigatório';
     }
     
-    if (!formData.email.trim()) {
+    if (!userData.email.trim()) {
       newErrors.email = 'Email é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(userData.email)) {
       newErrors.email = 'Email inválido';
     }
     
-    if (formData.cpf && formData.cpf.length !== 11) {
+    if (userData.cpf && userData.cpf.length !== 11) {
       newErrors.cpf = 'CPF inválido';
     }
     
@@ -122,18 +128,16 @@ export default function EditProfileScreen({ navigation, route }) {
       return;
     }
     
-    console.log('Sending profile data:', JSON.stringify(formData, null, 2));
-    
     setLoading(true);
     try {
       const headers = await authHeader();
       
       // Create a copy of the form data to ensure not undefined values
-      const dataToSend = Object.fromEntries(
-        Object.entries(formData).filter(([_, v]) => v !== undefined)
-      );
-      
-      console.log('Data being sent to API:', JSON.stringify(dataToSend, null, 2));
+      const dataToSend = {
+        userData: Object.fromEntries(
+          Object.entries(formData.userData).filter(([_, v]) => v !== undefined)
+        )
+      };
       
       const response = await fetch(`${API_IGO}profile/update-profile`, {
         method: 'PUT',
@@ -144,10 +148,7 @@ export default function EditProfileScreen({ navigation, route }) {
         body: JSON.stringify(dataToSend)
       });
 
-      console.log('Update profile response status:', response.status);
-      
       const data = await response.json();
-      console.log('Update profile response data:', data);
 
       if (response.ok) {
         Alert.alert(
@@ -206,7 +207,7 @@ export default function EditProfileScreen({ navigation, route }) {
           <View style={[styles.inputContainer, errors.name && styles.inputError]}>
             <TextInput
               style={styles.input}
-              value={formData.name}
+              value={formData.userData.name}
               onChangeText={(text) => handleChange('name', text)}
               placeholder="Digite seu nome"
             />
@@ -220,7 +221,7 @@ export default function EditProfileScreen({ navigation, route }) {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              value={formData.last_name}
+              value={formData.userData.last_name}
               onChangeText={(text) => handleChange('last_name', text)}
               placeholder="Digite seu sobrenome"
             />
@@ -228,7 +229,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
           <InputCpf
             label="CPF"
-            value={formData.cpf}
+            value={formData.userData.cpf}
             onChangeText={(text) => handleChange('cpf', text)}
             placeholder="123.456.789-10"
             error={errors.cpf}
@@ -236,7 +237,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
           <InputDate
             label="Data de Nascimento"
-            value={formData.birthdate}
+            value={formData.userData.birthdate}
             onChangeText={(text) => handleChange('birthdate', text)}
             placeholder="DD/MM/AAAA"
             error={errors.birthdate}
@@ -246,7 +247,7 @@ export default function EditProfileScreen({ navigation, route }) {
           <View style={[styles.inputContainer, errors.email && styles.inputError]}>
             <TextInput
               style={styles.input}
-              value={formData.email}
+              value={formData.userData.email}
               onChangeText={(text) => handleChange('email', text)}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -260,7 +261,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
           <InputPhone
             label="Telefone"
-            value={formData.phone}
+            value={formData.userData.phone}
             onChangeText={(text) => handleChange('phone', text)}
             placeholder="(00) 00000-0000"
             error={errors.phone}

@@ -4,7 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_IGO } from '@env';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/InputText';
-import { authHeader } from '../../auth/AuthService';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -54,19 +53,14 @@ export default function LoginScreen({ navigation }) {
       });
 
       const loginResponse = await response.json();
-      console.log('Login response:', loginResponse);
 
       if (response.ok && loginResponse.success) {
         // Check if the response has the expected structure
         if (loginResponse.data && loginResponse.data.token) {
           const token = loginResponse.data.token;
-          console.log('Login successful, token received:', token);
           
           // Store the token securely
           await AsyncStorage.setItem('userToken', token);
-          
-          // Explicitly log the token being stored
-          console.log('Token stored in AsyncStorage:', token);
           
           // Store complete user data for easy access
           if (loginResponse.data) {
@@ -77,7 +71,6 @@ export default function LoginScreen({ navigation }) {
             };
             
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
-            console.log('User data stored in AsyncStorage:', userData);
           }
           
           // Route based on user type
