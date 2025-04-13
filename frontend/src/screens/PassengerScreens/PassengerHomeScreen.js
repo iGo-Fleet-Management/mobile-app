@@ -6,7 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserIcon from '../../components/common/UserIcon';
 import { API_IGO } from '@env';
 
-// Components
 import Header from '../../components/common/Header';
 import TravelModeSelector from '../../components/home/TravelModeSelector';
 import StatusSwitch from '../../components/home/StatusSwitch';
@@ -153,7 +152,7 @@ export default function HomeScreen({ navigation }) {
         }
       };
       
-      const response = await fetch(`${API_IGO}add-round-trip`, {
+      const response = await fetch(`${API_IGO}add-roundtrip-stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -243,6 +242,7 @@ export default function HomeScreen({ navigation }) {
     
     try {
       if (!userData?.address_id) {
+        console.log('User data:', userData);
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
       
