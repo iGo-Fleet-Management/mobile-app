@@ -21,6 +21,6 @@ export default function IconButton ({
 
 const styles = StyleSheet.create({
   iconButton: {
-    padding: 10,
+    padding: 10
   },
 });

@@ -17,8 +17,8 @@ const StatusSwitch = ({
       />
       <Text style={styles.switchLabel}>Liberado</Text>
       <IconButton 
-        name="info-outline" 
-        onPress={onHelpPress} 
+        iconName="info-outline" 
+        onPress={onHelpPress}
       />
     </View>
   );

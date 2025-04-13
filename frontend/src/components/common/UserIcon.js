@@ -8,6 +8,7 @@ const UserIcon = ({ userName, onPress }) => {
   
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
+      <Text style={styles.name} numberOfLines={1}>{userName || 'Usuário'}</Text>
       <View style={styles.iconContainer}>
         {firstLetter ? (
           <Text style={styles.letterText}>{firstLetter}</Text>
@@ -15,7 +16,6 @@ const UserIcon = ({ userName, onPress }) => {
           <MaterialIcons name="person" size={24} color="white" />
         )}
       </View>
-      <Text style={styles.name} numberOfLines={1}>{userName || 'Usuário'}</Text>
     </TouchableOpacity>
   );
 };
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3f51b5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginLeft: 5,
   },
   letterText: {
     color: 'white',

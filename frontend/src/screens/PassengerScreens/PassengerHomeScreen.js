@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Picker } from '@react-native-picker/picker';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { checkAuthAndRedirect, authHeader } from '../../auth/AuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserIcon from '../../components/common/UserIcon';
 import { API_IGO } from '@env';
@@ -23,9 +25,12 @@ export default function HomeScreen({ navigation }) {
   const [pendingTravelMode, setPendingTravelMode] = useState(null);
   const [isCleanupConfirmation, setIsCleanupConfirmation] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProfileData, setUserProfileData] = useState(null);
+  const [userAddressData, setUserAddressData] = useState([null]);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [selectedGoAddress, setSelectedGoAddress] = useState(null);
+  const [confirmedGoAddress, setConfirmedGoAddress] = useState(null);
   
   // Animation value for the van
   const vanPosition = useRef(new Animated.Value(-50)).current;
@@ -33,12 +38,38 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const data = await AsyncStorage.getItem('userData');
-        if (data) {
-          setUserData(JSON.parse(data));
+        const headers = await authHeader();
+              
+        const response = await fetch(`${API_IGO}profile`, {
+          method: 'GET',
+          headers
+        });
+
+        const responseData = await response.json();
+
+        if (responseData.success){
+          const { data } = responseData;
+
+          const profileData = {
+            name: data.name
+          }
+
+          const addressData = (data.addresses || []).map(address => ({
+            address_id: address.address_id,
+            address_type: address.address_type,
+          }));
+
+          setUserProfileData(profileData);
+          setUserAddressData(addressData);
+          if (addressData.length > 0) {
+            setSelectedGoAddress(addressData[0].address_id);
+          }
         }
+        
       } catch (error) {
         console.error('Error loading user data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -57,8 +88,6 @@ export default function HomeScreen({ navigation }) {
   };
 
   const toggleMapExpanded = () => {
-    // Use um pequeno atraso para permitir que o componente seja renderizado corretamente 
-    // antes de mudar seu tamanho
     setTimeout(() => {
       setIsMapExpanded((prev) => !prev);
     }, 100);
@@ -77,18 +106,9 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleCleanupPress = () => {
+    setPendingTravelMode(null);
     setIsCleanupConfirmation(true);
     setModalVisible(true);
-  };
-  
-  const formatDateForDisplay = (date) => {
-    const options = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return date.toLocaleDateString('pt-BR', options);
   };
   
   const formatDateForAPI = (date) => {
@@ -96,12 +116,13 @@ export default function HomeScreen({ navigation }) {
   };
   
   const handleStatusChange = async (value) => {
+    const originalValue = isLiberado;
     setIsLiberado(value);
     setIsLoading(true);
     
     try {
       const formattedDate = formatDateForAPI(currentDate);
-      const response = await fetch(`${API_IGO}update-is-released?date=${formattedDate}`, {
+      const response = await fetch(`${API_IGO}stops/update-is-released?date=${formattedDate}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,9 +147,9 @@ export default function HomeScreen({ navigation }) {
         throw new Error(data.message || 'Erro ao atualizar status');
       }
       
-      console.log('Status updated:', data);
     } catch (error) {
       console.error('Error updating status:', error);
+      setIsLiberado(originalValue);
       Alert.alert('Erro', error.message || 'Não foi possível atualizar o status. Por favor, tente novamente.');
     } finally {
       setIsLoading(false);
@@ -137,9 +158,8 @@ export default function HomeScreen({ navigation }) {
   
   const addRoundTrip = async () => {
     setIsLoading(true);
-    
     try {
-      if (!userData?.address_id) {
+      if (!userAddressData) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
       
@@ -147,16 +167,16 @@ export default function HomeScreen({ navigation }) {
       const payload = {
         date: formattedDate,
         goStop: {
-          address_id: userData.address_id,
+          address_id: selectedGoAddress,
           stop_date: formattedDate
         },
         backStop: {
-          address_id: userData.address_id,
+          address_id: userAddressData[0].address_id,
           stop_date: formattedDate
         }
       };
       
-      const response = await fetch(`${API_IGO}add-roundtrip-stop`, {
+      const response = await fetch(`${API_IGO}stops/add-roundtrip-stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +199,6 @@ export default function HomeScreen({ navigation }) {
         throw new Error(data.message || 'Erro ao adicionar viagem de ida e volta');
       }
       
-      console.log('Round trip added:', data);
       return true;
     } catch (error) {
       console.error('Error adding round trip:', error);
@@ -194,7 +213,7 @@ export default function HomeScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      if (!userData?.address_id) {
+      if (!userAddressData) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
       
@@ -202,12 +221,12 @@ export default function HomeScreen({ navigation }) {
       const payload = {
         date: formattedDate,
         goStop: {
-          address_id: userData.address_id,
+          address_id: selectedGoAddress,
           stop_date: formattedDate
         }
       };
       
-      const response = await fetch(`${API_IGO}add-onlygotrip-stop`, {
+      const response = await fetch(`${API_IGO}stops/add-onlygotrip-stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -230,7 +249,6 @@ export default function HomeScreen({ navigation }) {
         throw new Error(data.message || 'Erro ao adicionar viagem de ida');
       }
       
-      console.log('One-way trip added:', data);
       return true;
     } catch (error) {
       console.error('Error adding one-way trip:', error);
@@ -245,8 +263,7 @@ export default function HomeScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      if (!userData?.address_id) {
-        console.log('User data:', userData);
+      if (!userAddressData) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
       
@@ -254,12 +271,12 @@ export default function HomeScreen({ navigation }) {
       const payload = {
         date: formattedDate,
         backStop: {
-          address_id: userData.address_id,
+          address_id: selectedGoAddress,
           stop_date: formattedDate
         }
       };
       
-      const response = await fetch(`${API_IGO}add-onlybacktrip-stop`, {
+      const response = await fetch(`${API_IGO}stops/add-onlybacktrip-stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +299,6 @@ export default function HomeScreen({ navigation }) {
         throw new Error(data.message || 'Erro ao adicionar viagem de volta');
       }
       
-      console.log('Return-only trip added:', data);
       return true;
     } catch (error) {
       console.error('Error adding return-only trip:', error);
@@ -297,7 +313,7 @@ export default function HomeScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      if (!userData?.address_id) {
+      if (!userAddressData) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
       
@@ -305,16 +321,16 @@ export default function HomeScreen({ navigation }) {
       const payload = {
         date: formattedDate,
         goStop: {
-          address_id: userData.address_id,
+          address_id: confirmedGoAddress,
           stop_date: formattedDate
         },
         backStop: {
-          address_id: userData.address_id,
+          address_id: userAddressData[0].address_id,
           stop_date: formattedDate
         }
       };
       
-      const response = await fetch(`${API_IGO}remove-stops`, {
+      const response = await fetch(`${API_IGO}stops/remove-stops`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -337,7 +353,6 @@ export default function HomeScreen({ navigation }) {
         throw new Error(data.message || 'Erro ao remover viagem');
       }
       
-      console.log('Stops removed:', data);
       return true;
     } catch (error) {
       console.error('Error removing stops:', error);
@@ -374,6 +389,7 @@ export default function HomeScreen({ navigation }) {
         
         if (success) {
           setTravelMode(pendingTravelMode);
+          setConfirmedGoAddress(selectedGoAddress);
         }
       }
     } catch (error) {
@@ -410,6 +426,15 @@ export default function HomeScreen({ navigation }) {
     return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
   };
 
+  if (isLoading) {
+      return (
+        <View style={[styles.container, styles.centerContent]}>
+          <ActivityIndicator size="large" color="#4285F4" />
+          <Text style={styles.loadingText}>Carregando</Text>
+        </View>
+      );
+    }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {isMapExpanded ? (
@@ -440,7 +465,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.userIconWrapper}>
               <UserIcon 
                 onPress={handleUserIconPress} 
-                userName={userData?.name || 'Usuário'} 
+                userName={userProfileData?.name || 'Usuário'} 
               />
             </View>
           </View>
@@ -504,6 +529,24 @@ export default function HomeScreen({ navigation }) {
                   }
                 </Text>
                 
+                {(pendingTravelMode === 'roundTrip' || pendingTravelMode === 'oneWay') && (
+                  <>
+                    <Text style={styles.modalLabel}>Escolha o endereço de ida:</Text>
+                    <Picker
+                      selectedValue={selectedGoAddress}
+                      onValueChange={(itemValue) => setSelectedGoAddress(itemValue)}
+                      style={styles.picker}
+                    >
+                      {userAddressData.map((address, index) => (
+                        <Picker.Item 
+                          key={address.address_id} 
+                          label={`${address.address_type}`} 
+                          value={address.address_id} 
+                        />
+                      ))}
+                    </Picker>
+                  </>
+                )}
                 <View style={styles.modalButtons}>
                   <Button 
                     title="Cancelar"
@@ -534,6 +577,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666',
   },
   headerContainer: {
     position: 'relative',
@@ -683,4 +735,15 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
   },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 10
+  },
+  picker: {
+    height: 60,
+    width: '100%',
+    marginBottom: 20,
+  }
 });

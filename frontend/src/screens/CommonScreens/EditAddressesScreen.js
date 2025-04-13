@@ -72,7 +72,6 @@ export default function EditAddressesScreen({ navigation }) {
       if (response.ok && responseData.success) {
         
         const addressesData = responseData.data.addresses;
-        console.log("Addresses Data:", addressesData)
         
           // Set the address type from the first address
           if (addressesData && addressesData.length > 0) {
@@ -89,8 +88,6 @@ export default function EditAddressesScreen({ navigation }) {
               city: address.city || '',
               state: address.state || ''
             }));
-
-            console.log('Formatted addresses:', formattedAddresses);
             
             // Definir o tipo de endereço padrão como 'Casa' ou o primeiro tipo encontrado
             const defaultType = formattedAddresses.find(a => a.address_type === 'Casa') ? 
@@ -241,8 +238,6 @@ export default function EditAddressesScreen({ navigation }) {
     setLoading(true);
     try {
       const headers = await authHeader();
-      
-      console.log('Sending address data:', JSON.stringify(formData, null, 2));
 
       const payload = {
         addressData: formData.addressData.map(address => ({
@@ -275,7 +270,6 @@ export default function EditAddressesScreen({ navigation }) {
       }
   
       const data = await response.json();
-      console.log('API response:', data);
   
       if (response.ok) {
         Alert.alert(
