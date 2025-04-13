@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, Alert } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, Easing, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserIcon from '../../components/common/UserIcon';
 import { API_IGO } from '@env';
 
+// Components
 import Header from '../../components/common/Header';
 import TravelModeSelector from '../../components/home/TravelModeSelector';
 import StatusSwitch from '../../components/home/StatusSwitch';
-import AlertBox from '../../components/home/AlertBox';
 import MapContainer from '../../components/home/MapContainer';
-import BottomUserBar from '../../components/home/BottomUserBar';
 import Button from '../../components/common/Button';
 
 import { colors, spacing, typography, shadows, borders } from '../../styles/globalStyles';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const [travelMode, setTravelMode] = useState(null);
@@ -25,26 +25,42 @@ export default function HomeScreen({ navigation }) {
   const [isCleanupConfirmation, setIsCleanupConfirmation] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
   
+  // Animation value for the van
   const vanPosition = useRef(new Animated.Value(-50)).current;
   
-  // Start van animation on component mount
   useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const data = await AsyncStorage.getItem('userData');
+        if (data) {
+          setUserData(JSON.parse(data));
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    
+    loadUserData();
     startVanAnimation();
   }, []);
   
-  // Function to animate the van
+  // Function to animate the van (loop animation)
   const startVanAnimation = () => {
-    Animated.loop(
       Animated.timing(vanPosition, {
-        toValue: 400, // End position (adjust based on screen width)
-        duration: 5000, // Animation duration in ms
+        toValue: screenWidth + 50,
+        duration: 5000,
         easing: Easing.linear,
         useNativeDriver: true,
-      })
-    ).start();
+      }).start();
   };
-  
+
+  const toggleMapExpanded = () => {
+    setIsMapExpanded(!isMapExpanded);
+  };
+
   const handleUserIconPress = () => {
     navigation.navigate('Profile');
   };
@@ -61,7 +77,7 @@ export default function HomeScreen({ navigation }) {
     setIsCleanupConfirmation(true);
     setModalVisible(true);
   };
-
+  
   const formatDateForDisplay = (date) => {
     const options = { 
       weekday: 'long', 
@@ -81,19 +97,27 @@ export default function HomeScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${API_IGO}update-is-released`, {
+      const formattedDate = formatDateForAPI(currentDate);
+      const response = await fetch(`${API_IGO}update-is-released?date=${formattedDate}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
         },
         body: JSON.stringify({
-          date: formatDateForAPI(currentDate),
           is_released: value
         })
       });
       
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Invalid server response');
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao atualizar status');
@@ -102,7 +126,7 @@ export default function HomeScreen({ navigation }) {
       console.log('Status updated:', data);
     } catch (error) {
       console.error('Error updating status:', error);
-      Alert.alert('Erro', 'Não foi possível atualizar o status. Por favor, tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível atualizar o status. Por favor, tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -112,8 +136,22 @@ export default function HomeScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      const userData = JSON.parse(await AsyncStorage.getItem('userData'));
-      const addressId = userData?.address_id || "bd448190-c549-4997-ab14-b3085caaa78f";
+      if (!userData?.address_id) {
+        throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
+      }
+      
+      const formattedDate = formatDateForAPI(currentDate);
+      const payload = {
+        date: formattedDate,
+        goStop: {
+          address_id: userData.address_id,
+          stop_date: formattedDate
+        },
+        backStop: {
+          address_id: userData.address_id,
+          stop_date: formattedDate
+        }
+      };
       
       const response = await fetch(`${API_IGO}add-round-trip`, {
         method: 'POST',
@@ -121,20 +159,18 @@ export default function HomeScreen({ navigation }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
         },
-        body: JSON.stringify({
-          date: formatDateForAPI(currentDate),
-          goStop: {
-            address_id: addressId,
-            stop_date: formatDateForAPI(currentDate)
-          },
-          backStop: {
-            address_id: addressId,
-            stop_date: formatDateForAPI(currentDate)
-          }
-        })
+        body: JSON.stringify(payload)
       });
       
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Invalid server response');
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao adicionar viagem de ida e volta');
@@ -144,19 +180,29 @@ export default function HomeScreen({ navigation }) {
       return true;
     } catch (error) {
       console.error('Error adding round trip:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar viagem de ida e volta. Por favor, tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível adicionar viagem de ida e volta. Por favor, tente novamente.');
       return false;
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const addOneWayTrip = async () => {
     setIsLoading(true);
     
     try {
-      const userData = JSON.parse(await AsyncStorage.getItem('userData'));
-      const addressId = userData?.address_id || "bf7151bf-0a87-426e-a274-e25e60f07375";
+      if (!userData?.address_id) {
+        throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
+      }
+      
+      const formattedDate = formatDateForAPI(currentDate);
+      const payload = {
+        date: formattedDate,
+        goStop: {
+          address_id: userData.address_id,
+          stop_date: formattedDate
+        }
+      };
       
       const response = await fetch(`${API_IGO}add-onlygotrip-stop`, {
         method: 'POST',
@@ -164,16 +210,18 @@ export default function HomeScreen({ navigation }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
         },
-        body: JSON.stringify({
-          date: formatDateForAPI(currentDate),
-          goStop: {
-            address_id: addressId,
-            stop_date: formatDateForAPI(currentDate)
-          }
-        })
+        body: JSON.stringify(payload)
       });
       
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Invalid server response');
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao adicionar viagem de ida');
@@ -183,7 +231,7 @@ export default function HomeScreen({ navigation }) {
       return true;
     } catch (error) {
       console.error('Error adding one-way trip:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar viagem de ida. Por favor, tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível adicionar viagem de ida. Por favor, tente novamente.');
       return false;
     } finally {
       setIsLoading(false);
@@ -194,8 +242,18 @@ export default function HomeScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      const userData = JSON.parse(await AsyncStorage.getItem('userData'));
-      const addressId = userData?.address_id || "bf7151bf-0a87-426e-a274-e25e60f07375";
+      if (!userData?.address_id) {
+        throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
+      }
+      
+      const formattedDate = formatDateForAPI(currentDate);
+      const payload = {
+        date: formattedDate,
+        backStop: {
+          address_id: userData.address_id,
+          stop_date: formattedDate
+        }
+      };
       
       const response = await fetch(`${API_IGO}add-onlybacktrip-stop`, {
         method: 'POST',
@@ -203,16 +261,18 @@ export default function HomeScreen({ navigation }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
         },
-        body: JSON.stringify({
-          date: formatDateForAPI(currentDate),
-          backStop: {
-            address_id: addressId,
-            stop_date: formatDateForAPI(currentDate)
-          }
-        })
+        body: JSON.stringify(payload)
       });
       
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Invalid server response');
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao adicionar viagem de volta');
@@ -222,19 +282,33 @@ export default function HomeScreen({ navigation }) {
       return true;
     } catch (error) {
       console.error('Error adding return-only trip:', error);
-      Alert.alert('Erro', 'Não foi possível adicionar viagem de volta. Por favor, tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível adicionar viagem de volta. Por favor, tente novamente.');
       return false;
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const removeStops = async () => {
     setIsLoading(true);
     
     try {
-      const userData = JSON.parse(await AsyncStorage.getItem('userData'));
-      const addressId = userData?.address_id || "e8e7b776-3f2a-41db-9791-57cabedfc190";
+      if (!userData?.address_id) {
+        throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
+      }
+      
+      const formattedDate = formatDateForAPI(currentDate);
+      const payload = {
+        date: formattedDate,
+        goStop: {
+          address_id: userData.address_id,
+          stop_date: formattedDate
+        },
+        backStop: {
+          address_id: userData.address_id,
+          stop_date: formattedDate
+        }
+      };
       
       const response = await fetch(`${API_IGO}remove-stops`, {
         method: 'DELETE',
@@ -242,20 +316,18 @@ export default function HomeScreen({ navigation }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
         },
-        body: JSON.stringify({
-          date: formatDateForAPI(currentDate),
-          goStop: {
-            address_id: addressId,
-            stop_date: formatDateForAPI(currentDate)
-          },
-          backStop: {
-            address_id: addressId,
-            stop_date: formatDateForAPI(currentDate)
-          }
-        })
+        body: JSON.stringify(payload)
       });
       
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Invalid server response');
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao remover viagem');
@@ -265,7 +337,7 @@ export default function HomeScreen({ navigation }) {
       return true;
     } catch (error) {
       console.error('Error removing stops:', error);
-      Alert.alert('Erro', 'Não foi possível cancelar sua viagem. Por favor, tente novamente.');
+      Alert.alert('Erro', error.message || 'Não foi possível cancelar sua viagem. Por favor, tente novamente.');
       return false;
     } finally {
       setIsLoading(false);
@@ -275,32 +347,36 @@ export default function HomeScreen({ navigation }) {
   const confirmChange = async () => {
     let success = false;
     
-    if (isCleanupConfirmation) {
-      success = await removeStops();
-      if (success) {
-        setTravelMode(null);
+    try {
+      if (isCleanupConfirmation) {
+        success = await removeStops();
+        if (success) {
+          setTravelMode(null);
+        }
+      } else {
+        switch(pendingTravelMode) {
+          case 'roundTrip':
+            success = await addRoundTrip();
+            break;
+          case 'oneWay':
+            success = await addOneWayTrip();
+            break;
+          case 'returnOnly':
+            success = await addReturnOnlyTrip();
+            break;
+          default:
+            break;
+        }
+        
+        if (success) {
+          setTravelMode(pendingTravelMode);
+        }
       }
-    } else {
-      switch(pendingTravelMode) {
-        case 'roundTrip':
-          success = await addRoundTrip();
-          break;
-        case 'oneWay':
-          success = await addOneWayTrip();
-          break;
-        case 'returnOnly':
-          success = await addReturnOnlyTrip();
-          break;
-        default:
-          break;
-      }
-      
-      if (success) {
-        setTravelMode(pendingTravelMode);
-      }
+    } catch (error) {
+      console.error('Error in confirmChange:', error);
+    } finally {
+      setModalVisible(false);
     }
-    
-    setModalVisible(false);
   };
 
   const cancelChange = () => {
@@ -332,103 +408,120 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          {/* Animated Van Icon */}
-          <Animated.View
-            style={[
-              styles.vanIcon,
-              {
-                transform: [{ translateX: vanPosition }]
-              }
-            ]}
-          >
-            <FontAwesome5 name="shuttle-van" size={24} color="#333" />
-          </Animated.View>
-          
-          <Header title="iGO" />
-          <View style={styles.userIconWrapper}>
-            <UserIcon onPress={handleUserIconPress} userName="John" />
-          </View>
-        </View>
-
-        <View style={styles.dateCard}>
-          <Text style={styles.dayOfWeek}>{formatDayOfWeek(currentDate)}</Text>
-          <Text style={styles.date}>{formatMonthDay(currentDate)}</Text>
-          
-          <TravelModeSelector 
-            selectedMode={travelMode}
-            onSelectMode={handleTravelModeChange}
-          />
-          
+      {isMapExpanded ? (
+        <View style={styles.expandedMapContainer}>
+          <MapContainer />
           <TouchableOpacity 
-            style={styles.cleanupButton}
-            onPress={handleCleanupPress}
-            disabled={isLoading}
+            style={styles.collapseButton}
+            onPress={toggleMapExpanded}
           >
-            <MaterialIcons name="clear" size={18} color="#fff" />
-            <Text style={styles.cleanupButtonText}>Não vou à aula</Text>
+            <MaterialIcons name="fullscreen-exit" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-
-        <StatusSwitch 
-          value={isLiberado}
-          onValueChange={handleStatusChange}
-          onHelpPress={() => navigation.navigate('Ajuda')}
-          disabled={isLoading}
-        />
-
-        <AlertBox 
-          message="Seu motorista já iniciou o trajeto. Fique atento!"
-          onEditPress={() => {/* Handle edit */}}
-        />
-
-        <MapContainer />
-
-        <BottomUserBar userName="John Doe" />
-
-        {/* Confirmation Modal */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {isCleanupConfirmation 
-                  ? "Confirmar cancelamento" 
-                  : "Confirmar alteração"}
-              </Text>
-              <Text style={styles.modalMessage}>
-                {isCleanupConfirmation
-                  ? "Você tem certeza que deseja cancelar sua viagem? Esta ação notificará o motorista que você não irá à aula hoje."
-                  : `Você tem certeza que deseja alterar seu tipo de viagem para "${getPendingModeLabel()}"?`
+      ) : (
+        <View style={styles.container}>
+          <View style={styles.headerContainer}>
+            <Animated.View
+              style={[
+                styles.vanIcon,
+                {
+                  transform: [{ translateX: vanPosition }]
                 }
-              </Text>
-              
-              <View style={styles.modalButtons}>
-                <Button 
-                  title="Cancelar"
-                  variant="outline"
-                  onPress={cancelChange}
-                  style={styles.modalButton}
-                  disabled={isLoading}
-                />
-                
-                <Button 
-                  title={isLoading ? "Processando..." : "Confirmar"}
-                  variant="primary"
-                  onPress={confirmChange}
-                  style={styles.modalButton}
-                  disabled={isLoading}
-                />
-              </View>
+              ]}
+            >
+              <FontAwesome5 name="shuttle-van" size={24} color={colors.primary} />
+            </Animated.View>
+            
+            <Header title="iGO" />
+            <View style={styles.userIconWrapper}>
+              <UserIcon 
+                onPress={handleUserIconPress} 
+                userName={userData?.name || 'Usuário'} 
+              />
             </View>
           </View>
-        </Modal>
-      </View>
+
+          <View style={styles.dateCard}>
+            <Text style={styles.dayOfWeek}>{formatDayOfWeek(currentDate)}</Text>
+            <Text style={styles.date}>{formatMonthDay(currentDate)}</Text>
+            
+            <TravelModeSelector 
+              selectedMode={travelMode}
+              onSelectMode={handleTravelModeChange}
+            />
+            
+            <TouchableOpacity 
+              style={[
+                styles.cleanupButton,
+                isLoading && styles.disabledButton
+              ]}
+              onPress={handleCleanupPress}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="clear" size={18} color="#fff" />
+              <Text style={styles.cleanupButtonText}>Não vou à aula</Text>
+            </TouchableOpacity>
+          </View>
+
+          <StatusSwitch 
+            value={isLiberado}
+            onValueChange={handleStatusChange}
+            onHelpPress={() => navigation.navigate('Ajuda')}
+            disabled={isLoading}
+          />
+
+          <View style={styles.mapWrapper}>
+            <MapContainer />
+            <TouchableOpacity 
+              style={styles.expandButton}
+              onPress={toggleMapExpanded}
+            >
+              <MaterialIcons name="fullscreen" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  {isCleanupConfirmation 
+                    ? "Confirmar cancelamento" 
+                    : "Confirmar alteração"}
+                </Text>
+                <Text style={styles.modalMessage}>
+                  {isCleanupConfirmation
+                    ? "Você tem certeza que deseja cancelar sua viagem? Esta ação notificará o motorista que você não irá à aula hoje."
+                    : `Você tem certeza que deseja alterar seu tipo de viagem para "${getPendingModeLabel()}"?`
+                  }
+                </Text>
+                
+                <View style={styles.modalButtons}>
+                  <Button 
+                    title="Cancelar"
+                    variant="outline"
+                    onPress={cancelChange}
+                    style={styles.modalButton}
+                    disabled={isLoading}
+                  />
+                  
+                  <Button 
+                    title={isLoading ? "Processando..." : "Confirmar"}
+                    variant="primary"
+                    onPress={confirmChange}
+                    style={styles.modalButton}
+                    disabled={isLoading}
+                  />
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -441,6 +534,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'relative',
     height: 60,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
   },
   vanIcon: {
     position: 'absolute',
@@ -485,44 +585,98 @@ const styles = StyleSheet.create({
     padding: 8,
     marginTop: 10,
   },
+  disabledButton: {
+    opacity: 0.6,
+  },
   cleanupButtonText: {
     color: 'white',
     marginLeft: 5,
     fontWeight: '500',
   },
-  modalOverlay: {
+  mapWrapper: {
     flex: 1,
-    backgroundColor: colors.modalBackground,
+    position: 'relative',
+    margin: 10,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  expandButton: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  expandedMapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  collapseButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 15,
   },
   modalContent: {
-    backgroundColor: colors.card,
-    borderRadius: borders.radius.lg,
-    padding: spacing.lg,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
     width: '90%',
     maxWidth: 400,
-    ...shadows.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 10,
   },
   modalTitle: {
-    ...typography.h3,
-    marginBottom: spacing.md,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
     textAlign: 'center',
+    color: '#333333',
   },
   modalMessage: {
-    ...typography.body1,
-    marginBottom: spacing.lg,
+    fontSize: 16,
+    marginBottom: 20,
     textAlign: 'center',
-    color: colors.gray[700],
+    color: '#555555',
+    lineHeight: 22,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: spacing.md,
+    marginTop: 10,
   },
   modalButton: {
     flex: 1,
-    marginHorizontal: spacing.xs,
+    marginHorizontal: 5,
   },
 });
