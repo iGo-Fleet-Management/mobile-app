@@ -8,6 +8,7 @@ import { InputCep } from '../../components/common/InputCep';
 
 export default function EditAddressesScreen({ navigation }) {
   const [addressType, setAddressType] = useState('Casa');
+  const [allAddresses, setAllAddresses] = useState([]);
   const [formData, setFormData] = useState({
     addressData: [{
       address_type: 'Casa',
@@ -36,13 +37,8 @@ export default function EditAddressesScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    // Update the address type in the form data when it changes
-    setFormData(prev => {
-      const updatedAddressData = [...prev.addressData];
-      updatedAddressData[0] = { ...updatedAddressData[0], address_type: addressType };
-      return { ...prev, addressData: updatedAddressData };
-    });
-  }, [addressType]);
+    updateFormDataByAddressType(addressType);
+  }, [addressType, allAddresses]);
 
   const fetchAddressData = async () => {
     setLoading(true);
@@ -56,48 +52,58 @@ export default function EditAddressesScreen({ navigation }) {
   
       if (response.status === 404) {
         console.log('No address found, user will create a new one');
+        setFormData({
+          addressData: [{
+            address_type: addressType, // Maintain the current address type
+            cep: '',
+            street: '',
+            number: '',
+            complement: '',
+            neighbourhood: '',
+            city: '',
+            state: ''
+          }]
+        });
         setLoading(false);
         setInitialLoad(false);
         return;
       }
-      
-      // Check if response is JSON before trying to parse it
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response");
-      }
-  
       const responseData = await response.json();
-
       if (response.ok && responseData.success) {
-        const addressData = responseData.data;
         
-        if (addressData) {
-          // If addressData is already an array, use it directly
-          // Otherwise wrap it in an array
-          const formattedAddressData = Array.isArray(addressData) 
-            ? addressData 
-            : [addressData];
-            
+        const addressesData = responseData.data.addresses;
+        console.log("Addresses Data:", addressesData)
+        
           // Set the address type from the first address
-          if (formattedAddressData[0] && formattedAddressData[0].address_type) {
-            setAddressType(formattedAddressData[0].address_type);
-          }
-          
-          setFormData({
-            addressData: formattedAddressData.map(address => ({
+          if (addressesData && addressesData.length > 0) {
+            // Armazenar todos os endereços formatados
+            const formattedAddresses = addressesData.map(address => ({
               address_id: address.address_id || undefined,
               address_type: address.address_type || 'Casa',
               cep: address.cep || '',
               street: address.street || '',
-              number: address.number || '',
+              // Converte o número para string
+              number: address.number ? String(address.number) : '',
               complement: address.complement || '',
               neighbourhood: address.neighbourhood || '',
               city: address.city || '',
               state: address.state || ''
-            }))
-          });
-        }
+            }));
+
+            console.log('Formatted addresses:', formattedAddresses);
+            
+            // Definir o tipo de endereço padrão como 'Casa' ou o primeiro tipo encontrado
+            const defaultType = formattedAddresses.find(a => a.address_type === 'Casa') ? 
+              'Casa' : (formattedAddresses[0]?.address_type || 'Casa');
+            
+            setAddressType(defaultType);
+            
+            // Armazenar todos os endereços em um estado para referência posterior
+            setAllAddresses(formattedAddresses);
+            
+            // Definir os dados do formulário com base no tipo de endereço atual
+            updateFormDataByAddressType(defaultType, formattedAddresses);
+          }
       } else {
         if (response.status === 401) {
           checkAuthAndRedirect(navigation);
@@ -120,6 +126,29 @@ export default function EditAddressesScreen({ navigation }) {
     }
   };
 
+  // Função para atualizar os dados do formulário com base no tipo de endereço
+  const updateFormDataByAddressType = (type) => {
+    // Encontra o endereço correspondente ao tipo no allAddresses
+    const existingAddress = allAddresses.find(addr => addr.address_type === type);
+  
+    setFormData(prev => ({
+      addressData: [{
+        ...(existingAddress || { // Mantém os dados existentes ou cria novo
+          address_type: type,
+          cep: '',
+          street: '',
+          number: '',
+          complement: '',
+          neighbourhood: '',
+          city: '',
+          state: ''
+        }),
+        // Mantém o address_id apenas se existir
+        address_id: existingAddress ? existingAddress.address_id : undefined
+      }]
+    }));
+  };
+
   const handleChange = (field, value) => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
@@ -132,7 +161,6 @@ export default function EditAddressesScreen({ navigation }) {
       return { ...prev, addressData: updatedAddressData };
     });
     
-    console.log(`Address field ${field} updated to:`, value);
   };
 
   const searchCEP = async () => {
@@ -215,14 +243,26 @@ export default function EditAddressesScreen({ navigation }) {
       const headers = await authHeader();
       
       console.log('Sending address data:', JSON.stringify(formData, null, 2));
+
+      const payload = {
+        addressData: formData.addressData.map(address => ({
+          // Filtra campos undefined e mantém apenas o necessário
+          ...(address.address_id && { address_id: address.address_id }),
+          address_type: address.address_type,
+          cep: address.cep,
+          street: address.street,
+          number: address.number,
+          complement: address.complement,
+          neighbourhood: address.neighbourhood,
+          city: address.city,
+          state: address.state
+        }))
+      };
       
       const response = await fetch(`${API_IGO}profile/update-address`, {
         method: 'PUT',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+        headers: { ...await authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       
       // Check for non-JSON response first
@@ -289,25 +329,34 @@ export default function EditAddressesScreen({ navigation }) {
           <View style={styles.formContainer}>
             <Text style={styles.fieldLabel}>Tipo de Endereço:</Text>
             <View style={styles.addressTypeContainer}>
-              <TouchableOpacity 
-                style={[
-                  styles.addressTypeButton,
-                  addressType === 'Casa' && styles.addressTypeSelected
-                ]}
-                onPress={() => setAddressType('Casa')}
-              >
-                <Text style={styles.addressTypeText}>Casa</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[
-                  styles.addressTypeButton,
-                  addressType === 'Outro' && styles.addressTypeSelected
-                ]}
-                onPress={() => setAddressType('Outro')}
-              >
-                <Text style={styles.addressTypeText}>Outro</Text>
-              </TouchableOpacity>
-            </View>
+                {/* Botão para Casa */}
+                <TouchableOpacity 
+                  style={[
+                    styles.addressTypeButton,
+                    addressType === 'Casa' && styles.addressTypeSelected
+                  ]}
+                  onPress={() => {
+                    setAddressType('Casa');
+                    updateFormDataByAddressType('Casa');
+                  }}
+                >
+                  <Text style={styles.addressTypeText}>Casa</Text>
+                </TouchableOpacity>
+
+                {/* Botão para Outro */}
+                <TouchableOpacity 
+                  style={[
+                    styles.addressTypeButton,
+                    addressType === 'Outro' && styles.addressTypeSelected
+                  ]}
+                  onPress={() => {
+                    setAddressType('Outro');
+                    updateFormDataByAddressType('Outro');
+                  }}
+                >
+                  <Text style={styles.addressTypeText}>Outro</Text>
+                </TouchableOpacity>
+              </View>
 
             <InputCep
               label="CEP *"
