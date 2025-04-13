@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { API_IGO } from '@env';
 import { checkAuthAndRedirect, authHeader } from '../../auth/AuthService';
-import InputCep from '../../components/common/InputCep';
+import { InputCep } from '../../components/common/InputCep';
 
 export default function EditAddressesScreen({ navigation }) {
   const [addressType, setAddressType] = useState('Casa');
-  const [addressData, setAddressData] = useState({
-    type: 'Casa',
-    cep: '',
-    logradouro: '',
-    numero: '',
-    complemento: '',
-    bairro: '',
-    cidade: ''
+  const [formData, setFormData] = useState({
+    addressData: [{
+      address_type: 'Casa',
+      cep: '',
+      street: '',
+      number: '',
+      complement: '',
+      neighbourhood: '',
+      city: '',
+      state: ''
+    }]
   });
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -33,8 +36,12 @@ export default function EditAddressesScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    // Update the address type in the address data when it changes
-    setAddressData(prev => ({ ...prev, type: addressType }));
+    // Update the address type in the form data when it changes
+    setFormData(prev => {
+      const updatedAddressData = [...prev.addressData];
+      updatedAddressData[0] = { ...updatedAddressData[0], address_type: addressType };
+      return { ...prev, addressData: updatedAddressData };
+    });
   }, [addressType]);
 
   const fetchAddressData = async () => {
@@ -42,72 +49,70 @@ export default function EditAddressesScreen({ navigation }) {
     try {
       const headers = await authHeader();
       
-      const response = await fetch(`${API_IGO}profile/address`, {
+      const response = await fetch(`${API_IGO}profile`, {
         method: 'GET',
         headers
       });
   
-      // Handle 404 (no address) as a valid scenario, not an error
       if (response.status === 404) {
         console.log('No address found, user will create a new one');
-        // Set default values for a new address
-        setAddressData({
-          type: 'Casa',
-          cep: '',
-          logradouro: '',
-          numero: '',
-          complemento: '',
-          bairro: '',
-          cidade: ''
-        });
         setLoading(false);
         setInitialLoad(false);
         return;
       }
+      
+      // Check if response is JSON before trying to parse it
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned non-JSON response");
+      }
   
-      const data = await response.json();
-  
-      if (response.ok) {
-        console.log('Address data retrieved successfully');
+      const responseData = await response.json();
+
+      if (response.ok && responseData.success) {
+        const addressData = responseData.data;
         
-        // If there's an address, populate the form
-        if (data && data.type) {
-          setAddressType(data.type);
+        if (addressData) {
+          // If addressData is already an array, use it directly
+          // Otherwise wrap it in an array
+          const formattedAddressData = Array.isArray(addressData) 
+            ? addressData 
+            : [addressData];
+            
+          // Set the address type from the first address
+          if (formattedAddressData[0] && formattedAddressData[0].address_type) {
+            setAddressType(formattedAddressData[0].address_type);
+          }
           
-          setAddressData({
-            type: data.type || 'Casa',
-            cep: data.cep || '',
-            logradouro: data.logradouro || '',
-            numero: data.numero || '',
-            complemento: data.complemento || '',
-            bairro: data.bairro || '',
-            cidade: data.cidade || ''
+          setFormData({
+            addressData: formattedAddressData.map(address => ({
+              address_id: address.address_id || undefined,
+              address_type: address.address_type || 'Casa',
+              cep: address.cep || '',
+              street: address.street || '',
+              number: address.number || '',
+              complement: address.complement || '',
+              neighbourhood: address.neighbourhood || '',
+              city: address.city || '',
+              state: address.state || ''
+            }))
           });
         }
       } else {
         if (response.status === 401) {
-          // Token expired or invalid
           checkAuthAndRedirect(navigation);
         } else {
-          Alert.alert('Erro', data.message || 'Erro ao carregar endereço.');
+          Alert.alert('Erro', responseData.message || 'Erro ao carregar endereço.');
         }
       }
     } catch (error) {
       console.error('Error fetching address:', error);
       if (error.message && error.message.includes('Network request failed')) {
         Alert.alert('Erro de Conexão', 'Verifique sua conexão com a internet e tente novamente.');
+      } else if (error.message && error.message.includes('non-JSON response')) {
+        Alert.alert('Erro de Servidor', 'O servidor retornou uma resposta inválida. Por favor, tente novamente mais tarde.');
       } else {
-        console.log('Continuing with empty address form');
-        // Set default values instead of showing an error
-        setAddressData({
-          type: 'Casa',
-          cep: '',
-          logradouro: '',
-          numero: '',
-          complemento: '',
-          bairro: '',
-          cidade: ''
-        });
+        Alert.alert('Erro', 'Ocorreu um problema ao carregar os dados do endereço.');
       }
     } finally {
       setLoading(false);
@@ -120,34 +125,45 @@ export default function EditAddressesScreen({ navigation }) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
     
-    setAddressData(prev => ({ ...prev, [field]: value }));
-    console.log(`Address field ${field} updated to:`, value); // Debug log
+    setFormData(prev => {
+      const updatedAddressData = [...prev.addressData];
+      // Update the first address in the array
+      updatedAddressData[0] = { ...updatedAddressData[0], [field]: value };
+      return { ...prev, addressData: updatedAddressData };
+    });
+    
+    console.log(`Address field ${field} updated to:`, value);
   };
 
   const searchCEP = async () => {
-    if (!addressData.cep || addressData.cep.length < 8) {
+    if (!formData.addressData[0].cep || formData.addressData[0].cep.length < 8) {
       Alert.alert('Erro', 'Por favor, digite um CEP válido.');
       return;
     }
-
-    const cleanCEP = addressData.cep.replace(/\D/g, '');
+  
+    const cleanCEP = formData.addressData[0].cep.replace(/\D/g, '');
     
     try {
       setLoading(true);
       const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
-      const data = await response.json();
-
-      if (data.erro) {
+      const cepData = await response.json();
+  
+      if (cepData.erro) {
         Alert.alert('Erro', 'CEP não encontrado.');
         return;
       }
-
-      setAddressData(prev => ({
-        ...prev,
-        logradouro: data.logradouro || prev.logradouro,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.localidade || prev.cidade,
-      }));
+  
+      setFormData(prev => {
+        const updatedAddressData = [...prev.addressData];
+        updatedAddressData[0] = { 
+          ...updatedAddressData[0],
+          street: cepData.logradouro || '',
+          neighbourhood: cepData.bairro || '',
+          city: cepData.localidade || '',
+          state: cepData.uf || ''
+        };
+        return { ...prev, addressData: updatedAddressData };
+      });
     } catch (error) {
       console.error('Error searching CEP:', error);
       Alert.alert('Erro', 'Ocorreu um erro ao buscar o CEP.');
@@ -158,25 +174,30 @@ export default function EditAddressesScreen({ navigation }) {
 
   const validateForm = () => {
     const newErrors = {};
+    const address = formData.addressData[0];
     
-    if (!addressData.cep || addressData.cep.length < 8) {
+    if (!address.cep || address.cep.length < 8) {
       newErrors.cep = 'CEP é obrigatório';
     }
     
-    if (!addressData.logradouro.trim()) {
-      newErrors.logradouro = 'Logradouro é obrigatório';
+    if (!address.street.trim()) {
+      newErrors.street = 'Logradouro é obrigatório';
     }
     
-    if (!addressData.numero.trim()) {
-      newErrors.numero = 'Número é obrigatório';
+    if (!address.number.trim()) {
+      newErrors.number = 'Número é obrigatório';
     }
     
-    if (!addressData.bairro.trim()) {
-      newErrors.bairro = 'Bairro é obrigatório';
+    if (!address.neighbourhood.trim()) {
+      newErrors.neighbourhood = 'Bairro é obrigatório';
     }
     
-    if (!addressData.cidade.trim()) {
-      newErrors.cidade = 'Cidade é obrigatória';
+    if (!address.city.trim()) {
+      newErrors.city = 'Cidade é obrigatória';
+    }
+    
+    if (!address.state.trim()) {
+      newErrors.state = 'Estado é obrigatório';
     }
     
     setErrors(newErrors);
@@ -193,40 +214,37 @@ export default function EditAddressesScreen({ navigation }) {
     try {
       const headers = await authHeader();
       
-      // Check if address exists to determine if it should update or create
-      const checkResponse = await fetch(`${API_IGO}profile/address`, {
-        method: 'GET',
-        headers
-      });
+      console.log('Sending address data:', JSON.stringify(formData, null, 2));
       
-      // Determine if we're creating a new address or updating an existing one
-      const method = checkResponse.status === 404 ? 'POST' : 'PUT';
-      const endpoint = method === 'POST' ? 'profile/create-address' : 'profile/update-address';
-      
-      console.log('Sending address data:', JSON.stringify(addressData, null, 2));
-      console.log(`Using method ${method} to endpoint ${endpoint}`);
-      
-      const response = await fetch(`${API_IGO}${endpoint}`, {
-        method,
+      const response = await fetch(`${API_IGO}profile/update-address`, {
+        method: 'PUT',
         headers: {
           ...headers,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(addressData)
+        body: JSON.stringify(formData)
       });
+      
+      // Check for non-JSON response first
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        // Handle HTML error responses from server
+        const errorText = await response.text();
+        console.error('Server returned non-JSON response:', errorText);
+        throw new Error("Server returned non-JSON response");
+      }
   
       const data = await response.json();
       console.log('API response:', data);
   
       if (response.ok) {
         Alert.alert(
-          'Sucesso', 
-          method === 'POST' ? 'Endereço criado com sucesso!' : 'Endereço atualizado com sucesso!',
+          'Sucesso',
+          'Endereço atualizado com sucesso!',
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
         if (response.status === 401) {
-          // Token expired or invalid
           checkAuthAndRedirect(navigation);
         } else {
           Alert.alert('Erro', data.message || 'Erro ao atualizar endereço.');
@@ -234,7 +252,11 @@ export default function EditAddressesScreen({ navigation }) {
       }
     } catch (error) {
       console.error('Error updating address:', error);
-      Alert.alert('Erro', 'Ocorreu um problema ao atualizar os dados do endereço.');
+      if (error.message && error.message.includes('non-JSON response')) {
+        Alert.alert('Erro de Servidor', 'O servidor retornou uma resposta inválida. Por favor, tente novamente mais tarde.');
+      } else {
+        Alert.alert('Erro', 'Ocorreu um problema ao atualizar os dados do endereço.');
+      }
     } finally {
       setLoading(false);
     }
@@ -250,133 +272,164 @@ export default function EditAddressesScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialIcons name="chevron-left" size={30} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar Endereços</Text>
-        <View style={{ width: 30 }} />
-      </View>
-
-      <ScrollView style={styles.content}>
-        <View style={styles.formContainer}>
-          <Text style={styles.fieldLabel}>Tipo de Endereço:</Text>
-          <View style={styles.addressTypeContainer}>
-            <TouchableOpacity 
-              style={[
-                styles.addressTypeButton,
-                addressType === 'Casa' && styles.addressTypeSelected
-              ]}
-              onPress={() => setAddressType('Casa')}
-            >
-              <Text style={styles.addressTypeText}>Casa</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.addressTypeButton,
-                addressType === 'Outro' && styles.addressTypeSelected
-              ]}
-              onPress={() => setAddressType('Outro')}
-            >
-              <Text style={styles.addressTypeText}>Outro</Text>
-            </TouchableOpacity>
-          </View>
-
-          <InputCep
-            label="CEP *"
-            value={addressData.cep}
-            onChangeText={(text) => handleChange('cep', text)}
-            placeholder="00000-000"
-            error={errors.cep}
-            onSearch={searchCEP}
-            loading={loading}
-            required
-          />
-
-          <Text style={styles.fieldLabel}>Logradouro *</Text>
-          <View style={[styles.inputContainer, errors.logradouro && styles.inputError]}>
-            <TextInput
-              style={styles.input}
-              value={addressData.logradouro}
-              onChangeText={(text) => handleChange('logradouro', text)}
-              placeholder="Rua, Avenida, etc."
-            />
-            {errors.logradouro && (
-              <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
-            )}
-          </View>
-          {errors.logradouro && <Text style={styles.errorText}>{errors.logradouro}</Text>}
-
-          <Text style={styles.fieldLabel}>Número *</Text>
-          <View style={[styles.inputContainer, errors.numero && styles.inputError]}>
-            <TextInput
-              style={styles.input}
-              value={addressData.numero}
-              onChangeText={(text) => handleChange('numero', text)}
-              keyboardType="numeric"
-              placeholder="123"
-            />
-            {errors.numero && (
-              <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
-            )}
-          </View>
-          {errors.numero && <Text style={styles.errorText}>{errors.numero}</Text>}
-
-          <Text style={styles.fieldLabel}>Complemento</Text>
-          <TextInput
-            style={styles.input}
-            value={addressData.complemento}
-            onChangeText={(text) => handleChange('complemento', text)}
-            placeholder="Apto, Bloco, etc."
-          />
-
-          <Text style={styles.fieldLabel}>Bairro *</Text>
-          <View style={[styles.inputContainer, errors.bairro && styles.inputError]}>
-            <TextInput
-              style={styles.input}
-              value={addressData.bairro}
-              onChangeText={(text) => handleChange('bairro', text)}
-              placeholder="Nome do bairro"
-            />
-            {errors.bairro && (
-              <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
-            )}
-          </View>
-          {errors.bairro && <Text style={styles.errorText}>{errors.bairro}</Text>}
-
-          <Text style={styles.fieldLabel}>Cidade *</Text>
-          <View style={[styles.inputContainer, errors.cidade && styles.inputError]}>
-            <TextInput
-              style={styles.input}
-              value={addressData.cidade}
-              onChangeText={(text) => handleChange('cidade', text)}
-              placeholder="Nome da cidade"
-            />
-            {errors.cidade && (
-              <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
-            )}
-          </View>
-          {errors.cidade && <Text style={styles.errorText}>{errors.cidade}</Text>}
-
-          <Text style={styles.noteText}>* Campos obrigatórios</Text>
-
-          <TouchableOpacity 
-            style={[styles.saveButton, loading && styles.disabledButton]} 
-            onPress={handleSave}
-            disabled={loading}
-          >
-            <Text style={styles.saveButtonText}>
-              {loading ? 'Salvando...' : 'Salvar Endereço'}
-            </Text>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidingView}
+    >
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialIcons name="chevron-left" size={30} color="black" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Editar Endereços</Text>
+          <View style={{ width: 30 }} />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        <ScrollView style={styles.content}>
+          <View style={styles.formContainer}>
+            <Text style={styles.fieldLabel}>Tipo de Endereço:</Text>
+            <View style={styles.addressTypeContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.addressTypeButton,
+                  addressType === 'Casa' && styles.addressTypeSelected
+                ]}
+                onPress={() => setAddressType('Casa')}
+              >
+                <Text style={styles.addressTypeText}>Casa</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.addressTypeButton,
+                  addressType === 'Outro' && styles.addressTypeSelected
+                ]}
+                onPress={() => setAddressType('Outro')}
+              >
+                <Text style={styles.addressTypeText}>Outro</Text>
+              </TouchableOpacity>
+            </View>
+
+            <InputCep
+              label="CEP *"
+              value={formData.addressData[0].cep}
+              onChangeText={(text) => handleChange('cep', text)}
+              placeholder="00000-000"
+              error={errors.cep}
+              onSearch={searchCEP}
+              loading={loading}
+              required
+            />
+
+            <Text style={styles.fieldLabel}>Logradouro *</Text>
+            <View style={[styles.inputContainer, errors.street && styles.inputError]}>
+              <TextInput
+                style={styles.input}
+                value={formData.addressData[0].street}
+                onChangeText={(text) => handleChange('street', text)}
+                placeholder="Rua, Avenida, etc."
+              />
+              {errors.street && (
+                <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+              )}
+            </View>
+            {errors.street && <Text style={styles.errorText}>{errors.street}</Text>}
+
+            <Text style={styles.fieldLabel}>Número *</Text>
+            <View style={[styles.inputContainer, errors.number && styles.inputError]}>
+              <TextInput
+                style={styles.input}
+                value={formData.addressData[0].number}
+                onChangeText={(text) => handleChange('number', text)}
+                keyboardType="numeric"
+                placeholder="123"
+              />
+              {errors.number && (
+                <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+              )}
+            </View>
+            {errors.number && <Text style={styles.errorText}>{errors.number}</Text>}
+
+            <Text style={styles.fieldLabel}>Complemento</Text>
+            <View style={[styles.inputContainer, errors.complement && styles.inputError]}>
+              <TextInput
+                style={styles.input}
+                value={formData.addressData[0].complement}
+                onChangeText={(text) => handleChange('complement', text)}
+                placeholder="Apto, Bloco, etc."
+              />
+              {errors.complement && (
+                <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+              )}
+            </View>
+            {errors.complement && <Text style={styles.errorText}>{errors.complement}</Text>}
+
+            <Text style={styles.fieldLabel}>Bairro *</Text>
+            <View style={[styles.inputContainer, errors.neighbourhood && styles.inputError]}>
+              <TextInput
+                style={styles.input}
+                value={formData.addressData[0].neighbourhood}
+                onChangeText={(text) => handleChange('neighbourhood', text)}
+                placeholder="Nome do bairro"
+              />
+              {errors.neighbourhood && (
+                <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+              )}
+            </View>
+            {errors.neighbourhood && <Text style={styles.errorText}>{errors.neighbourhood}</Text>}
+
+            <Text style={styles.fieldLabel}>Cidade *</Text>
+            <View style={[styles.inputContainer, errors.city && styles.inputError]}>
+              <TextInput
+                style={styles.input}
+                value={formData.addressData[0].city}
+                onChangeText={(text) => handleChange('city', text)}
+                placeholder="Nome da cidade"
+              />
+              {errors.city && (
+                <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+              )}
+            </View>
+            {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
+
+            <Text style={styles.fieldLabel}>Estado *</Text>
+            <View style={[styles.inputContainer, errors.state && styles.inputError]}>
+              <TextInput
+                style={styles.input}
+                value={formData.addressData[0].state}
+                onChangeText={(text) => handleChange('state', text)}
+                placeholder="UF"
+                maxLength={2}
+                autoCapitalize="characters"
+              />
+              {errors.state && (
+                <MaterialIcons name="error-outline" size={20} color="#FF3B30" style={styles.errorIcon} />
+              )}
+            </View>
+            {errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
+
+            <Text style={styles.noteText}>* Campos obrigatórios</Text>
+
+            <TouchableOpacity 
+              style={[styles.saveButton, loading && styles.disabledButton]} 
+              onPress={handleSave}
+              disabled={loading}
+            >
+              <Text style={styles.saveButtonText}>
+                {loading ? 'Salvando...' : 'Salvar Endereço'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -461,37 +514,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   errorIcon: {
-    marginLeft: 10,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  inputWithButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  inputFlex: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    height: 48,
-    paddingHorizontal: 10,
-    fontSize: 16,
-  },
-  infoIcon: {
-    padding: 10,
-  },
-  searchButton: {
-    backgroundColor: '#4285F4',
-    height: 48,
-    width: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
     marginLeft: 10,
   },
   noteText: {
