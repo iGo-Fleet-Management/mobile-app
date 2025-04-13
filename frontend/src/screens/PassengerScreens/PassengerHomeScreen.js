@@ -57,7 +57,11 @@ export default function HomeScreen({ navigation }) {
   };
 
   const toggleMapExpanded = () => {
-    setIsMapExpanded(!isMapExpanded);
+    // Use um pequeno atraso para permitir que o componente seja renderizado corretamente 
+    // antes de mudar seu tamanho
+    setTimeout(() => {
+      setIsMapExpanded((prev) => !prev);
+    }, 100);
   };
 
   const handleUserIconPress = () => {
@@ -622,9 +626,9 @@ const styles = StyleSheet.create({
   },
   collapseButton: {
     position: 'absolute',
-    top: 20,
+    bottom: 20,
     right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 20,
     width: 40,
     height: 40,
