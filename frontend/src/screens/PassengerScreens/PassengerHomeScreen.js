@@ -11,7 +11,7 @@ import { API_IGO } from '@env';
 import Header from '../../components/common/Header';
 import TravelModeSelector from '../../components/home/TravelModeSelector';
 import StatusSwitch from '../../components/home/StatusSwitch';
-import MapContainer from '../../components/home/MapContainer';
+import MapContainer from '../../utils/PassengerLocation';
 import Button from '../../components/common/Button';
 
 import { colors, spacing, typography, shadows, borders } from '../../styles/globalStyles';

@@ -1,173 +1,120 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Image, Text, Platform } from 'react-native';
-import MapView from 'react-native-maps';
-import * as Location from 'expo-location';
+import { GOOGLE_MAPS_API_KEY } from '@env';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { WebView } from 'react-native-webview';
+import socket from '../../utils/socket';
 
-const MapContainer = () => {
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [showMap, setShowMap] = useState(true);  // Inicie como true para evitar flickering
-  const mapRef = useRef(null);
-  
-  // Default region
-  const [region, setRegion] = useState({
-    latitude: -19.469,  // São Paulo (ou outra coordenada relevante para você)
-    longitude: -42.5367,
-    latitudeDelta: 0.07,
-    longitudeDelta: 0.05,
-  });
-
-  // Controlador para prevenir múltiplas inicializações
-  const hasInitialized = useRef(false);
+const MapContainer = ({ location, title = "Você está aqui!" }) => {
+  const webViewRef = useRef(null);
+  const [currentLocation, setCurrentLocation] = useState(location || { lat: 0, lng: 0 });
 
   useEffect(() => {
-    let locationSubscription = null;
-    
-    const setupLocation = async () => {
-      if (hasInitialized.current) return;
-      hasInitialized.current = true;
-      
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
-          setShowMap(false);
-          return;
-        }
+    socket.connect();
 
-        // Obter localização inicial
-        let userLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        
-        setLocation(userLocation);
-        
-        if (userLocation) {
-          const newRegion = {
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
-          };
-          
-          setRegion(newRegion);
-          
-          // Adicione um pequeno atraso antes de animar para a região
-          setTimeout(() => {
-            if (mapRef.current) {
-              mapRef.current.animateToRegion(newRegion, 500);
+    socket.on('driverLocation', (driverLoc) => {
+      if (driverLoc && driverLoc.lat && driverLoc.lng) {
+        setCurrentLocation(driverLoc);
+        // Atualiza a posição do motorista sem recarregar o mapa
+        if (webViewRef.current) {
+          const updateDriverLocation = `
+            const newPos = { lat: ${driverLoc.lat}, lng: ${driverLoc.lng} };
+            if (driverMarker) {
+              driverMarker.setPosition(newPos);
+              map.panTo(newPos);
             }
-          }, 100);
+          `;
+          webViewRef.current.injectJavaScript(updateDriverLocation);
         }
-        
-        // Assine atualizações de localização
-        locationSubscription = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: 5000, // 10 segundos
-            distanceInterval: 10, // 10 metros
-          },
-          (newLocation) => {
-            setLocation(newLocation);
-          }
-        );
-      } catch (error) {
-        console.error("Error setting up location:", error);
-        setErrorMsg("Não foi possível obter a localização");
-        setShowMap(false);
       }
-    };
+    });
 
-    setupLocation();
-
-    // Cleanup function
     return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
-      }
+      socket.off('driverLocation');
+      socket.disconnect();
     };
   }, []);
 
-  // Lidar com errors no carregamento do mapa
-  const handleMapError = () => {
-    console.log("Erro ao carregar o mapa");
-    setShowMap(false);
-  };
+  if (!currentLocation || !currentLocation.lat || !currentLocation.lng) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text>Carregando mapa...</Text>
+      </View>
+    );
+  }
 
-  // Função para lidar com o sucesso do carregamento do mapa
-  const handleMapReady = () => {
-    // Se temos localização, anime até lá
-    if (location && mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.015,
-        longitudeDelta: 0.0121,
-      }, 500);
-    }
-  };
+  const { lat, lng } = currentLocation;
+  console.log('Current Location:', lat, lng);
+
+  const mapHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+        <meta charset="utf-8" />
+        <style>
+          html, body { height: 100%; margin: 0; padding: 0; }
+          #map { height: 100%; }
+        </style>
+        <script src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}"></script>
+        <script>
+          let map;
+          let driverMarker;
+
+          function initMap() {
+            const initialPosition = { lat: ${lat}, lng: ${lng} };
+            map = new google.maps.Map(document.getElementById("map"), {
+              zoom: 15,
+              center: initialPosition,
+              disableDefaultUI: true,
+            });
+
+            driverMarker = new google.maps.Marker({
+              position: initialPosition,
+              map: map,
+              title: "${title}",
+            });
+          }
+
+          window.onload = initMap;
+        </script>
+      </head>
+      <body>
+        <div id="map"></div>
+      </body>
+    </html>
+  `;
 
   return (
-    <View style={styles.mapContainer}>
-      {showMap ? (
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={region}
-          showsUserLocation={true}
-          onMapReady={handleMapReady}
-          onError={handleMapError}
-          // Ajuste para melhorar a renderização e performance
-          moveOnMarkerPress={false}
-          rotateEnabled={false}
-          loadingEnabled={true}
-          loadingIndicatorColor="#666"
-          loadingBackgroundColor="#eeeeee"
-        />
-      ) : (
-        <View style={styles.fallbackContainer}>
-          <Image
-            source={require('../../../assets/images/google-map-example-blog.png')}
-            style={styles.fallbackImage}
-            resizeMode="cover"
-          />
-          {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
-        </View>
-      )}
+    <View style={styles.container}>
+      <WebView
+        ref={webViewRef}
+        originWhitelist={['*']}
+        source={{ html: mapHtml }}
+        style={styles.webview}
+        javaScriptEnabled
+        domStorageEnabled
+        startInLoadingState
+        renderLoading={() => <ActivityIndicator size="large" color="#000" style={{ flex: 1 }} />}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  mapContainer: {
+  container: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    borderRadius: 8,
     overflow: 'hidden',
-    borderRadius: 8,
   },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  fallbackContainer: {
+  webview: {
     flex: 1,
-    position: 'relative',
   },
-  fallbackImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  errorText: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    padding: 5,
-    borderRadius: 4,
-    color: 'red',
-  }
 });
 
 export default MapContainer;
