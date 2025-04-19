@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta charset="utf-8" />
+    <style>
+      html, body { height: 100%; margin: 0; padding: 0; }
+      #map { height: 100%; }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCvcxlQaCUGRYvSQWUqoiaEKEYN3dY8Vz0"></script>
+    <script>
+      let map;
+      let driverMarker;
+      let isFirstUpdate = true; // Flag para verificar a primeira atualização
+
+      function initMap() {
+        const defaultPos = { lat: -19.469, lng: -42.5367 };
+        map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 15,
+          center: defaultPos,
+          disableDefaultUI: true,
+        });
+
+        driverMarker = new google.maps.Marker({
+          position: defaultPos,
+          map: map,
+          title: "Motorista",
+        });
+      }
+
+      window.onload = initMap;
+
+      document.addEventListener("message", function (event) {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "updateDriver") {
+            const { lat, lng } = data.location;
+            const newPos = { lat, lng };
+            driverMarker.setPosition(newPos);
+
+            if (isFirstUpdate) {
+              map.panTo(newPos); // Centraliza no novo ponto
+              isFirstUpdate = false; // Desativa a centralização após a primeira atualização
+            }
+          }
+        } catch (e) {
+          console.error("Erro ao processar localização", e);
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="map"></div>
+  </body>
+</html>
