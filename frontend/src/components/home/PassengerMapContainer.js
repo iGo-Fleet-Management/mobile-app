@@ -25,7 +25,7 @@ const MapContainer = () => {
     };
   }, []);
 
-  const mapSource = require('../../../assets/map.html');
+  const mapSource = require('../../../assets/passengerMap.html');
 
   return (
     <View style={styles.container}>

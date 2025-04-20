@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta charset="utf-8" />
+    <style>
+        html, body, #map { height: 100%; margin: 0; padding: 0; }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCvcxlQaCUGRYvSQWUqoiaEKEYN3dY8Vz0"></script>
+    <script>
+        let map, marker;
+
+        function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: { lat: -19.51426194402678, lng: -42.61166145386494 },
+            disableDefaultUI: true,
+        });
+        }
+
+        function updateDriverMarker(lat, lng) {
+        const position = { lat, lng };
+        if (marker) {
+            marker.setPosition(position);
+        } else {
+            marker = new google.maps.Marker({
+            position,
+            map,
+            title: "Motorista",
+            });
+            map.setCenter(position);
+        }
+        }
+
+        window.updateDriverMarker = updateDriverMarker;
+    </script>
+    </head>
+    <body onload="initMap()">
+    <div id="map"></div>
+    </body>
+</html>

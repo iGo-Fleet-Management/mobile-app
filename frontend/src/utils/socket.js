@@ -1,7 +1,7 @@
 // utils/socket.js
 import { io } from 'socket.io-client';
 
-const socket = io('http://192.168.1.64:5000', {
+const socket = io('https://backend-igo.onrender.com', {
   transports: ['websocket'],
   autoConnect: false,
 });

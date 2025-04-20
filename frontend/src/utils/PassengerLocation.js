@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import * as Location from 'expo-location';
-import MapContainer from '../components/home/MapContainer';
+import PassengerMapContainer from '../components/home/PassengerMapContainer';
 
 export default function PassengerMapScreen() {
   const [location, setLocation] = useState(null);
@@ -48,5 +48,5 @@ export default function PassengerMapScreen() {
     );
   }
 
-  return <MapContainer location={location} title="Você está aqui!" />;
+  return <PassengerMapContainer location={location} title="Você está aqui!" />;
 }
