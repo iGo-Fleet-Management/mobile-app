@@ -11,6 +11,7 @@
     <script>
       let map;
       let driverMarker;
+      let passengerMarker;
       let isFirstUpdate = true; // Flag para verificar a primeira atualização
 
       function initMap() {
@@ -26,6 +27,21 @@
           map: map,
           title: "Motorista",
         });
+
+        // Marcador do passageiro (inicialmente invisível)
+        passengerMarker = new google.maps.Marker({
+          position: null,
+          map: map,
+          title: "Você",
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "#FFFFFF",
+            strokeWeight: 2,
+            scale: 8
+          }
+        });
       }
 
       window.onload = initMap;
@@ -33,6 +49,7 @@
       document.addEventListener("message", function (event) {
         try {
           const data = JSON.parse(event.data);
+
           if (data.type === "updateDriver") {
             const { lat, lng } = data.location;
             const newPos = { lat, lng };
@@ -41,6 +58,18 @@
             if (isFirstUpdate) {
               map.panTo(newPos); // Centraliza no novo ponto
               isFirstUpdate = false; // Desativa a centralização após a primeira atualização
+            }
+          } else if (data.type === "updatePassenger") {
+            const { lat, lng } = data.location;
+            const newPos = { lat, lng };
+            
+            // Atualiza marcador do passageiro
+            passengerMarker.setPosition(newPos);
+            
+            // Centraliza mapa na primeira atualização
+            if (isFirstUpdate) {
+              map.panTo(newPos);
+              isFirstUpdate = false;
             }
           }
         } catch (e) {
