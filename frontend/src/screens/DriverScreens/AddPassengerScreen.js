@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   View, 
@@ -8,12 +9,14 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { API_IGO } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AddPassengerScreen() {
   const navigation = useNavigation();
@@ -26,6 +29,7 @@ export default function AddPassengerScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
@@ -72,37 +76,48 @@ export default function AddPassengerScreen() {
     }
     
     try {
-      const response = await fetch(`${API_IGO}auth/register`, {
+      setIsSubmitting(true);
+      
+      // Get the authentication token
+      const token = await AsyncStorage.getItem('userToken');
+      
+      if (!token) {
+        Alert.alert('Erro', 'Você precisa estar logado para adicionar passageiros.');
+        return;
+      }
+      
+      const response = await fetch(`${API_IGO}/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({
+          user_type: 'passenger',
           name,
           last_name,
           email,
           password,
-          reset_password
+          reset_password,
         }),
       });
 
       const addPassengerResponse = await response.json();
 
       if (response.ok) {
-        Alert.alert('Sucesso', 'Passageiro adicionado com sucesso!');
-        navigation.navigate('DriverHomeScreen', { screen: 'Passageiros' });
+        Alert.alert(
+          'Sucesso', 
+          'Passageiro adicionado com sucesso!',
+          [{ text: 'OK', onPress: () => navigation.navigate('DriverHomeScreen', { screen: 'Passageiros' }) }]
+        );
       } else {
-        Alert.alert('Erro', addPassengerResponse.data.message || 'Erro ao adicionar passageiro.');
+        Alert.alert('Erro', addPassengerResponse.message || 'Erro ao adicionar passageiro.');
       }
     } catch (error) {
       console.error('Error adding passenger:', error);
       Alert.alert('Erro', 'Ocorreu um erro ao adicionar o passageiro.');
-      
-      console.log('Novo passageiro:', {
-        name,
-        last_name,
-        email,
-        password,
-        reset_password
-      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,6 +160,7 @@ export default function AddPassengerScreen() {
                 onChangeText={setName}
                 placeholder="Digite o nome"
                 autoCapitalize="words"
+                editable={!isSubmitting}
               />
               {errors.name && (
                 <Text style={styles.errorText}>{errors.name}</Text>
@@ -159,6 +175,7 @@ export default function AddPassengerScreen() {
                 onChangeText={setLastName}
                 placeholder="Digite o sobrenome"
                 autoCapitalize="words"
+                editable={!isSubmitting}
               />
               {errors.last_name && (
                 <Text style={styles.errorText}>{errors.last_name}</Text>
@@ -174,6 +191,7 @@ export default function AddPassengerScreen() {
                 placeholder="Digite o email"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isSubmitting}
               />
               {errors.email && (
                 <Text style={styles.errorText}>{errors.email}</Text>
@@ -191,6 +209,7 @@ export default function AddPassengerScreen() {
                   onChangeText={setPassword}
                   placeholder="Digite a senha"
                   secureTextEntry={!showPassword}
+                  editable={!isSubmitting}
                 />
                 <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
                   <MaterialIcons 
@@ -214,6 +233,7 @@ export default function AddPassengerScreen() {
                   onChangeText={setConfirmPassword}
                   placeholder="Confirme a senha"
                   secureTextEntry={!showConfirmPassword}
+                  editable={!isSubmitting}
                 />
                 <TouchableOpacity onPress={toggleConfirmPasswordVisibility} style={styles.eyeIcon}>
                   <MaterialIcons 
@@ -231,6 +251,7 @@ export default function AddPassengerScreen() {
             <TouchableOpacity 
               style={styles.checkboxContainer}
               onPress={toggleResetPassword}
+              disabled={isSubmitting}
             >
               <View style={[styles.checkbox, reset_password && styles.checkboxSelected]}>
                 {reset_password && <MaterialIcons name="check" size={16} color="#fff" />}
@@ -239,10 +260,15 @@ export default function AddPassengerScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
               onPress={handleSubmit}
+              disabled={isSubmitting}
             >
-              <Text style={styles.submitButtonText}>Adicionar Passageiro</Text>
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.submitButtonText}>Adicionar Passageiro</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </View>

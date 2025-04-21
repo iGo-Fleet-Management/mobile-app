@@ -1,100 +1,207 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import LogoutConfirmation from '../../components/common/Logout';
+import { API_IGO } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import ProfileSkeleton from '../../components/common/Skeleton';
 
 const PassengerProfileScreen = ({ navigation }) => {
-  const [userData, setUserData] = useState({
-    nome: 'John',
-    sobrenome: 'Doe',
-    cpf: '123.456.789-10',
-    dataNascimento: '02/09/2003',
-    email: 'johndoe@gmail.com',
-    telefone: '(31) 9 1234-5678',
-    enderecos: [
-      { tipo: 'Casa', logradouro: 'R.', numero: '12', bairro: 'Bairro 1', cidade: 'Ipatinga', cep: '35123-000' },
-      { tipo: 'Trabalho', logradouro: 'R.', numero: '72', bairro: 'Bairro 4', cidade: 'Ipatinga', cep: '35123-000' }
-    ]
-  });
-
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Get the authentication token from AsyncStorage
+      const token = await AsyncStorage.getItem('userToken');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+  
+      const response = await fetch(`${API_IGO}/profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile data');
+      }
+  
+      const responseData = await response.json();
+      
+      // Extract the user data from the nested structure
+      if (responseData.success && responseData.data) {
+        setUserData(responseData.data);
+      } else {
+        throw new Error('Invalid data format from API');
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   const handleEditProfile = () => {
-    navigation.navigate('EditProfile');
+    navigation.navigate('EditProfile', { userData });
   };
 
   const handleAddressesPress = () => {
-    navigation.navigate('EditAddresses');
+    navigation.navigate('EditAddresses', { addresses: userData?.addresses || [] });
   };
 
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
 
-  const confirmLogout = () => {
-    setShowLogoutModal(false);
-    navigation.navigate('Login');
+  const confirmLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('userToken');
+      setShowLogoutModal(false);
+      navigation.navigate('Login');
+    } catch (err) {
+      console.error('Error during logout:', err);
+    }
   };
 
   const cancelLogout = () => {
     setShowLogoutModal(false);
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialIcons name="chevron-left" size={30} color="black" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => {}} style={styles.helpButton}>
-          <Text style={styles.helpText}>Ajuda</Text>
-          <MaterialIcons name="help-outline" size={20} color="#007BFF" />
-        </TouchableOpacity>
-      </View>
+  // Render the header (shared between all states)
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <MaterialIcons name="chevron-left" size={30} color="black" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => {}} style={styles.helpButton}>
+        <Text style={styles.helpText}>Ajuda</Text>
+        <MaterialIcons name="help-outline" size={20} color="#007BFF" />
+      </TouchableOpacity>
+    </View>
+  );
 
-      <ScrollView style={styles.content}>
+  // Helper function to calculate age from birth date
+  const calculateAge = (birthDate) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  // Render profile content or error message
+  const renderContent = () => {
+    if (loading) {
+      return <ProfileSkeleton />;
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={60} color="#e53935" />
+          <Text style={styles.errorText}>Erro ao carregar perfil: {error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchUserProfile}>
+            <Text style={styles.retryButtonText}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return userData ? (
+      <>
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <MaterialIcons name="person" size={60} color="black" />
             </View>
           </View>
-          <Text style={styles.userName}>{`${userData.nome} ${userData.sobrenome}`}</Text>
+          <Text style={styles.userName}>{`${userData.name} ${userData.last_name}`}</Text>
           <Text style={styles.userRole}>Passageiro</Text>
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.infoLabel}>Idade:</Text>
-          <Text style={styles.infoValue}>20</Text>
+          {userData.birth_date && (
+            <>
+              <Text style={styles.infoLabel}>Idade:</Text>
+              <Text style={styles.infoValue}>
+                {calculateAge(userData.birth_date)} anos
+              </Text>
+            </>
+          )}
           
-          <Text style={styles.infoLabel}>Telefone:</Text>
-          <Text style={styles.infoValue}>{userData.telefone}</Text>
+          {userData.phone && (
+            <>
+              <Text style={styles.infoLabel}>Telefone:</Text>
+              <Text style={styles.infoValue}>{userData.phone}</Text>
+            </>
+          )}
           
-          <Text style={styles.infoLabel}>Endereços:</Text>
-          {userData.enderecos.map((endereco, index) => (
-            <Text key={index} style={styles.addressText}>
-              ({endereco.tipo}) {endereco.logradouro} {endereco.numero}, {endereco.bairro}, {endereco.cidade}
-            </Text>
-          ))}
+          {userData.addresses && userData.addresses.length > 0 && (
+            <>
+              <Text style={styles.infoLabel}>Endereços:</Text>
+              {userData.addresses.map((endereco, index) => (
+                <Text key={index} style={styles.addressText}>
+                  ({endereco.address_type}) {endereco.street} {endereco.number}, {endereco.neighbourhood}, {endereco.city}
+                </Text>
+              ))}
+            </>
+          )}
           
           <Text style={styles.infoLabel}>Email:</Text>
           <Text style={styles.infoValue}>{userData.email}</Text>
         </View>
+      </>
+    ) : null;
+  };
 
-        <TouchableOpacity 
-          style={styles.editButton} 
-          onPress={handleEditProfile}
-        >
-          <Text style={styles.editButtonText}>Editar Perfil</Text>
-        </TouchableOpacity>
+  // Always show action buttons (Edit and Logout) regardless of content state
+  const renderActionButtons = () => (
+    <>
+      <TouchableOpacity 
+        style={styles.editButton} 
+        onPress={handleEditProfile}
+      >
+        <Text style={styles.editButtonText}>Editar Perfil</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutButtonText}>Sair</Text>
-        </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.logoutButton} 
+        onPress={handleLogout}
+      >
+        <Text style={styles.logoutButtonText}>Sair</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {renderHeader()}
+      
+      <ScrollView style={styles.content}>
+        {renderContent()}
+        {renderActionButtons()}
       </ScrollView>
 
       <LogoutConfirmation
@@ -110,6 +217,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    marginTop: 50,
+    marginBottom: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#e53935',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#4285F4',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   header: {
     flexDirection: 'row',
@@ -128,9 +263,6 @@ const styles = StyleSheet.create({
   helpText: {
     color: '#007BFF',
     marginRight: 5,
-  },
-  content: {
-    flex: 1,
   },
   profileHeader: {
     alignItems: 'center',
@@ -210,7 +342,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: 'red',
-  },
+  }
 });
 
 export default PassengerProfileScreen;
