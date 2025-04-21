@@ -20,7 +20,7 @@ const PassengersScreen = ({ navigation, route }) => {
         const headers = await authHeader();
   
         try {
-          const response = await fetch(`http://192.168.1.64:5000/api/users/get-all-users`, {
+          const response = await fetch(`${API_IGO}/users/get-all-users`, {
             method: 'GET',
             headers
           });
