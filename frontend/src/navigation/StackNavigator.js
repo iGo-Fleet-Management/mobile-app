@@ -41,7 +41,7 @@ const StackNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="DriverHomeScreen"
+        initialRouteName="Login"
         screenOptions={{
           headerShown: false,
           gestureEnabled: true,

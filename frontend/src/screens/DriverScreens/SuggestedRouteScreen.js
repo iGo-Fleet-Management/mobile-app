@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } fr
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { authHeader } from '../../auth/AuthService';
+import { API_IGO } from '@env';
 
 const SuggestedRouteScreen = () => {
   const navigation = useNavigation();
@@ -20,7 +21,7 @@ const SuggestedRouteScreen = () => {
       try {
         const date = "2025-04-19";
         
-        const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-resume?date=${date}`, {
+        const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${date}`, {
           method: 'GET',
           headers
         });
@@ -28,7 +29,7 @@ const SuggestedRouteScreen = () => {
         const data = await response.json();
 
         // ADICIONADO: Buscar usuários liberados
-        const releasedResponse = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-released-users?date=${date}`, {
+        const releasedResponse = await fetch(`${API_IGO}trips/get-trip-released-users?date=${date}`, {
           method: 'GET',
           headers
         });
