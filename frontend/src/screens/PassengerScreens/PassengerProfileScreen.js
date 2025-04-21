@@ -6,7 +6,7 @@ import LogoutConfirmation from '../../components/common/Logout';
 import { API_IGO } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import ProfileSkeleton from '../../components/common/Skeleton';
+import Skeleton from '../../components/common/Skeleton';
 
 const PassengerProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
@@ -114,7 +114,7 @@ const PassengerProfileScreen = ({ navigation }) => {
   // Render profile content or error message
   const renderContent = () => {
     if (loading) {
-      return <ProfileSkeleton />;
+      return <Skeleton />;
     }
 
     if (error) {

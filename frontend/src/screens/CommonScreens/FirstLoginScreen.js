@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -12,16 +12,61 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_IGO } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Skeleton from '../../components/common/Skeleton';
 
-const FirstLoginScreen = ({ route }) => {
+const FirstLoginScreen = () => {
   const navigation = useNavigation();
-  const { userName, userEmail } = route.params || { userName: 'Hugo', userEmail: 'novo@gmail.com' };
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          navigation.navigate('Login');
+          return;
+        }
+        
+        const response = await fetch(`${API_IGO}/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile data');
+        }
+        
+        const responseData = await response.json();
+        
+        if (responseData.success && responseData.data) {
+          setUserName(responseData.data.name || '');
+          setUserEmail(responseData.data.email || '');
+        } else {
+          throw new Error('Invalid data format from API');
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        Alert.alert('Erro', 'Não foi possível recuperar seus dados. Por favor, tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserProfile();
+  }, []);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -65,9 +110,34 @@ const FirstLoginScreen = ({ route }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (validatePassword()) {
-      navigation.navigate('FirstLoginPersonalInfo', { userName, userEmail });
+      try {
+        setIsLoading(true);
+        const token = await AsyncStorage.getItem('userToken');
+        
+        const response = await fetch(`${API_IGO}/forgot-password/reset-password`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            newPassword: password,
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update password');
+        }
+        
+        navigation.navigate('FirstLoginPersonalInfo');
+      } catch (error) {
+        console.error('Error updating password:', error);
+        Alert.alert('Erro', 'Não foi possível alterar sua senha. Por favor, tente novamente.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 

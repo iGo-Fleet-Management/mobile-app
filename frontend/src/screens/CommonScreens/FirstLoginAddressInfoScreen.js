@@ -15,10 +15,15 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Skeleton from '../../components/common/Skeleton';
+import { API_IGO } from '@env';
 
-const FirstLoginAddressInfoScreen = ({ route }) => {
+const FirstLoginAddressInfoScreen = () => {
   const navigation = useNavigation();
-  const { userData } = route.params || { userData: {} };
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [addressType, setAddressType] = useState('Casa');
   const [cep, setCep] = useState('');
@@ -30,9 +35,55 @@ const FirstLoginAddressInfoScreen = ({ route }) => {
   const [estado, setEstado] = useState('');
   const [addressLoading, setAddressLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [numberComplement, setNumberComplement] = useState('');
   const [addressTypeOptions] = useState(['Casa', 'Trabalho', 'Outro']);
   const [addressTypeModalVisible, setAddressTypeModalVisible] = useState(false);
+
+  // This API call is optional since we're updating a new address
+  // but we could fetch existing addresses if needed
+  useEffect(() => {
+    const fetchUserAddresses = async () => {
+      try {
+        setIsLoading(true);
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          navigation.navigate('Login');
+          return;
+        }
+        
+        const response = await fetch(`${API_IGO}profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile data');
+        }
+        
+        const responseData = await response.json();
+        const userData = responseData.data;
+        
+        if (userData.addresses && userData.addresses.length > 0) {
+          const primaryAddress = userData.addresses[0];
+          setAddressType(primaryAddress.type || 'Casa');
+          setCep(primaryAddress.zip_code || '');
+          setLogradouro(primaryAddress.street || '');
+          setNumero(primaryAddress.number || '');
+          setComplemento(primaryAddress.complement || '');
+          setBairro(primaryAddress.neighborhood || '');
+          setCidade(primaryAddress.city || '');
+          setEstado(primaryAddress.state || '');
+        }
+      } catch (error) {
+        console.error('Error fetching addresses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserAddresses();
+  }, []);
 
   const formatCEP = (value) => {
     value = value.replace(/\D/g, '');
@@ -54,35 +105,26 @@ const FirstLoginAddressInfoScreen = ({ route }) => {
   const fetchAddressByCEP = async (cep) => {
     try {
       setAddressLoading(true);
-      
-      // Remover todos os caracteres não numéricos
       const cleanCEP = cep.replace(/\D/g, '');
       
-      // Verificar se o CEP tem 8 dígitos
       if (cleanCEP.length !== 8) {
         Alert.alert('CEP Inválido', 'Por favor, digite um CEP válido com 8 dígitos.');
         setAddressLoading(false);
         return;
       }
       
-      // Simular um tempo de carregamento para melhor experiência do usuário
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+      const data = await response.json();
       
-      // Arrays para simulação de dados
-      const streets = ['Rua das Flores', 'Av. Brasil', 'Rua São Paulo', 'Av. Paulista', 'Rua Amazonas', 'Rua dos Pinheiros', 'Av. Atlântica', 'Rua Sergipe', 'Av. Rebouças', 'Rua Augusta'];
-      const neighborhoods = ['Centro', 'Jardim América', 'Vila Madalena', 'Pinheiros', 'Itaim Bibi', 'Moema', 'Brooklin', 'Morumbi', 'Consolação', 'Bela Vista'];
-      const cities = ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre', 'Salvador', 'Recife', 'Fortaleza', 'Brasília', 'Manaus'];
-      const states = ['SP', 'RJ', 'MG', 'PR', 'RS', 'BA', 'PE', 'CE', 'DF', 'AM'];
+      if (data.erro) {
+        Alert.alert('CEP não encontrado', 'O CEP informado não foi encontrado.');
+        return;
+      }
       
-      // Usar o último dígito do CEP para escolher um índice aleatório
-      const lastDigit = parseInt(cleanCEP.charAt(7));
-      const index = lastDigit % 10;
-      
-      // Preencher os campos com os dados obtidos
-      setLogradouro(streets[index]);
-      setBairro(neighborhoods[index]);
-      setCidade(cities[index]);
-      setEstado(states[index]);
+      setLogradouro(data.logradouro || '');
+      setBairro(data.bairro || '');
+      setCidade(data.localidade || '');
+      setEstado(data.uf || '');
     } catch (error) {
       console.error('Erro ao buscar endereço:', error);
       Alert.alert('Erro', 'Não foi possível recuperar o endereço para este CEP.');
@@ -99,7 +141,6 @@ const FirstLoginAddressInfoScreen = ({ route }) => {
   const validateForm = () => {
     const newErrors = {};
     
-    // Validação dos campos
     if (!cep.trim() || cep.length < 9) {
       newErrors.cep = 'CEP inválido';
     }
@@ -128,47 +169,56 @@ const FirstLoginAddressInfoScreen = ({ route }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (validateForm()) {
-      const addressData = { 
-        addressType, 
-        cep, 
-        logradouro, 
-        numero, 
-        complemento, 
-        bairro, 
-        cidade, 
-        estado 
-      };
-      
-      // Combinando dados do usuário com endereço
-      const completeUserData = { ...userData, address: addressData };
-      
-      // Aqui você enviaria os dados para o backend
-      console.log('Dados completos do usuário:', completeUserData);
-      
-      // Mostrando alerta de sucesso
-      Alert.alert(
-        "Cadastro Concluído",
-        "Seu cadastro foi concluído com sucesso!",
-        [
-          { 
-            text: "OK", 
-            onPress: () => {
-              // Usando reset para limpar a pilha de navegação e garantir que o usuário não volte para as telas de cadastro
-              navigation.reset({
-                index: 0,
-                routes: [
-                  { 
-                    name: 'PassengerHomeScreen',
-                    params: { userData: completeUserData }
-                  }
-                ],
-              });
+      try {
+        setIsSaving(true);
+        const token = await AsyncStorage.getItem('userToken');
+        
+        const response = await fetch(`${API_IGO}profile/update-address`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: addressType,
+            zip_code: cep.replace(/\D/g, ''),
+            street: logradouro,
+            number: numero,
+            complement: complemento,
+            neighborhood: bairro,
+            city: cidade,
+            state: estado,
+            is_default: true
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update address');
+        }
+        
+        Alert.alert(
+          "Cadastro Concluído",
+          "Seu cadastro foi concluído com sucesso!",
+          [
+            { 
+              text: "OK", 
+              onPress: () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'PassengerHomeScreen' }],
+                });
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      } catch (error) {
+        console.error('Error updating address:', error);
+        Alert.alert('Erro', 'Não foi possível salvar seu endereço. Por favor, tente novamente.');
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -188,190 +238,214 @@ const FirstLoginAddressInfoScreen = ({ route }) => {
         <ScrollView style={styles.content}>
           <Text style={styles.headerTitle}>Complete as informações abaixo para finalizarmos seu cadastro!</Text>
           
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Endereço(s):</Text>
-            <TouchableOpacity 
-              style={styles.dropdownSelector}
-              onPress={() => setAddressTypeModalVisible(true)}
-            >
-              <Text style={styles.dropdownText}>{addressType}</Text>
-              <MaterialIcons name="arrow-drop-down" size={24} color="#4285F4" />
-            </TouchableOpacity>
-          </View>
-          
-          <Modal
-            transparent={true}
-            visible={addressTypeModalVisible}
-            animationType="fade"
-            onRequestClose={() => setAddressTypeModalVisible(false)}
-          >
-            <TouchableWithoutFeedback onPress={() => setAddressTypeModalVisible(false)}>
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                  {addressTypeOptions.map((type) => (
-                    <TouchableOpacity
-                      key={type}
+          {isLoading ? (
+            <>
+              <Skeleton width="100%" height={50} marginBottom={15} />
+              <Skeleton width="100%" height={60} marginBottom={15} />
+              <Skeleton width="100%" height={60} marginBottom={15} />
+              <Skeleton width="100%" height={60} marginBottom={15} />
+              <Skeleton width="100%" height={60} marginBottom={15} />
+              <Skeleton width="100%" height={60} marginBottom={15} />
+              <Skeleton width="100%" height={60} marginBottom={15} />
+            </>
+          ) : (
+            <>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Endereço(s):</Text>
+                <TouchableOpacity 
+                  style={styles.dropdownSelector}
+                  onPress={() => setAddressTypeModalVisible(true)}
+                >
+                  <Text style={styles.dropdownText}>{addressType}</Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#4285F4" />
+                </TouchableOpacity>
+              </View>
+              
+              <Modal
+                transparent={true}
+                visible={addressTypeModalVisible}
+                animationType="fade"
+                onRequestClose={() => setAddressTypeModalVisible(false)}
+              >
+                <TouchableWithoutFeedback onPress={() => setAddressTypeModalVisible(false)}>
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                      {addressTypeOptions.map((type) => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.modalOption,
+                            addressType === type && styles.selectedOption
+                          ]}
+                          onPress={() => selectAddressType(type)}
+                        >
+                          <Text 
+                            style={[
+                              styles.modalOptionText,
+                              addressType === type && styles.selectedOptionText
+                            ]}
+                          >
+                            {type}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
+              </Modal>
+              
+              <View style={styles.formContainer}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>CEP</Text>
+                  <View style={styles.cepContainer}>
+                    <TextInput
                       style={[
-                        styles.modalOption,
-                        addressType === type && styles.selectedOption
+                        styles.input, 
+                        styles.cepInput,
+                        errors.cep ? styles.inputError : null
                       ]}
-                      onPress={() => selectAddressType(type)}
-                    >
-                      <Text 
-                        style={[
-                          styles.modalOptionText,
-                          addressType === type && styles.selectedOptionText
-                        ]}
+                      value={cep}
+                      onChangeText={formatCEP}
+                      placeholder="00000-000"
+                      keyboardType="numeric"
+                      maxLength={9}
+                      editable={!addressLoading}
+                    />
+                    {addressLoading ? (
+                      <ActivityIndicator size="small" color="#007bff" style={styles.cepIcon} />
+                    ) : (
+                      <TouchableOpacity 
+                        style={styles.cepIconContainer} 
+                        onPress={() => cep.length === 9 && fetchAddressByCEP(cep)}
+                        disabled={cep.length !== 9}
                       >
-                        {type}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text style={styles.cepIcon}>🔍</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {errors.cep && <Text style={styles.errorText}>{errors.cep}</Text>}
+                </View>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Logradouro</Text>
+                  <View style={styles.infoInputContainer}>
+                    <TextInput
+                      style={[
+                        styles.input, 
+                        styles.infoInput,
+                        errors.logradouro ? styles.inputError : null,
+                        addressLoading && styles.disabledInput
+                      ]}
+                      value={logradouro}
+                      onChangeText={setLogradouro}
+                      placeholder="Rua, Avenida, etc..."
+                      editable={!addressLoading}
+                    />
+                    {addressLoading ? (
+                      <MaterialIcons name="autorenew" size={24} color="#4285F4" style={[styles.infoIcon, styles.loadingIcon]} />
+                    ) : (
+                      <MaterialIcons name="location-on" size={24} color="#777" style={styles.infoIcon} />
+                    )}
+                  </View>
+                  {errors.logradouro && <Text style={styles.errorText}>{errors.logradouro}</Text>}
+                </View>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Número</Text>
+                  <TextInput
+                    style={[styles.input, errors.numero ? styles.inputError : null]}
+                    value={numero}
+                    onChangeText={setNumero}
+                    placeholder="Ex: 1000"
+                    keyboardType="numeric"
+                  />
+                  {errors.numero && <Text style={styles.errorText}>{errors.numero}</Text>}
+                </View>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Complemento</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={complemento}
+                    onChangeText={setComplemento}
+                    placeholder="Ex: Apto 101"
+                  />
+                </View>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Bairro</Text>
+                  <View style={styles.infoInputContainer}>
+                    <TextInput
+                      style={[
+                        styles.input, 
+                        styles.infoInput,
+                        errors.bairro ? styles.inputError : null,
+                        addressLoading && styles.disabledInput
+                      ]}
+                      value={bairro}
+                      onChangeText={setBairro}
+                      placeholder="Bairro"
+                      editable={!addressLoading}
+                    />
+                    <MaterialIcons name="info" size={24} color="#777" style={styles.infoIcon} />
+                  </View>
+                  {errors.bairro && <Text style={styles.errorText}>{errors.bairro}</Text>}
+                </View>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Cidade</Text>
+                  <View style={styles.infoInputContainer}>
+                    <TextInput
+                      style={[
+                        styles.input, 
+                        styles.infoInput,
+                        errors.cidade ? styles.inputError : null,
+                        addressLoading && styles.disabledInput
+                      ]}
+                      value={cidade}
+                      onChangeText={setCidade}
+                      placeholder="Cidade"
+                      editable={!addressLoading}
+                    />
+                    <MaterialIcons name="info" size={24} color="#777" style={styles.infoIcon} />
+                  </View>
+                  {errors.cidade && <Text style={styles.errorText}>{errors.cidade}</Text>}
+                </View>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Estado</Text>
+                  <TextInput
+                    style={[
+                      styles.input, 
+                      styles.infoInput,
+                      errors.estado ? styles.inputError : null,
+                      addressLoading && styles.disabledInput
+                    ]}
+                    value={estado}
+                    onChangeText={setEstado}
+                    placeholder="Estado"
+                    editable={!addressLoading}
+                  />
+                  {errors.estado && <Text style={styles.errorText}>{errors.estado}</Text>}
                 </View>
               </View>
-            </TouchableWithoutFeedback>
-          </Modal>
-          
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>CEP</Text>
-              <View style={styles.cepContainer}>
-                <TextInput
-                  style={[
-                    styles.input, 
-                    styles.cepInput,
-                    errors.cep ? styles.inputError : null
-                  ]}
-                  value={cep}
-                  onChangeText={formatCEP}
-                  placeholder="00000-000"
-                  keyboardType="numeric"
-                  maxLength={9}
-                />
-                {addressLoading ? (
-                  <ActivityIndicator size="small" color="#007bff" style={styles.cepIcon} />
-                ) : (
-                  <TouchableOpacity 
-                    style={styles.cepIconContainer} 
-                    onPress={() => cep.length === 9 && fetchAddressByCEP(cep)}
-                  >
-                    <Text style={styles.cepIcon}>🔍</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              {errors.cep && <Text style={styles.errorText}>{errors.cep}</Text>}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Logradouro</Text>
-              <View style={styles.infoInputContainer}>
-                <TextInput
-                  style={[
-                    styles.input, 
-                    styles.infoInput,
-                    errors.logradouro ? styles.inputError : null,
-                    addressLoading && styles.disabledInput
-                  ]}
-                  value={logradouro}
-                  onChangeText={setLogradouro}
-                  placeholder="Rua, Avenida, etc..."
-                  editable={!addressLoading}
-                />
-                {addressLoading ? (
-                  <MaterialIcons name="autorenew" size={24} color="#4285F4" style={[styles.infoIcon, styles.loadingIcon]} />
-                ) : (
-                  <MaterialIcons name="location-on" size={24} color="#777" style={styles.infoIcon} />
-                )}
-              </View>
-              {errors.logradouro && <Text style={styles.errorText}>{errors.logradouro}</Text>}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Número</Text>
-              <TextInput
-                style={[styles.input, errors.numero ? styles.inputError : null]}
-                value={numero}
-                onChangeText={setNumero}
-                placeholder="Ex: 1000"
-                keyboardType="numeric"
-              />
-              {errors.numero && <Text style={styles.errorText}>{errors.numero}</Text>}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Complemento</Text>
-              <TextInput
-                style={styles.input}
-                value={complemento}
-                onChangeText={setComplemento}
-                placeholder="Ex: Apto 101"
-              />
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Bairro</Text>
-              <View style={styles.infoInputContainer}>
-                <TextInput
-                  style={[
-                    styles.input, 
-                    styles.infoInput,
-                    errors.bairro ? styles.inputError : null,
-                    addressLoading && styles.disabledInput
-                  ]}
-                  value={bairro}
-                  onChangeText={setBairro}
-                  placeholder="Bairro"
-                  editable={!addressLoading}
-                />
-                <MaterialIcons name="info" size={24} color="#777" style={styles.infoIcon} />
-              </View>
-              {errors.bairro && <Text style={styles.errorText}>{errors.bairro}</Text>}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Cidade</Text>
-              <View style={styles.infoInputContainer}>
-                <TextInput
-                  style={[
-                    styles.input, 
-                    styles.infoInput,
-                    errors.cidade ? styles.inputError : null,
-                    addressLoading && styles.disabledInput
-                  ]}
-                  value={cidade}
-                  onChangeText={setCidade}
-                  placeholder="Cidade"
-                  editable={!addressLoading}
-                />
-                <MaterialIcons name="info" size={24} color="#777" style={styles.infoIcon} />
-              </View>
-              {errors.cidade && <Text style={styles.errorText}>{errors.cidade}</Text>}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Estado</Text>
-              <TextInput
-                style={[
-                  styles.input, 
-                  styles.infoInput,
-                  errors.estado ? styles.inputError : null,
-                  addressLoading && styles.disabledInput
-                ]}
-                value={estado}
-                onChangeText={setEstado}
-                placeholder="Estado"
-                editable={!addressLoading}
-              />
-              {errors.estado && <Text style={styles.errorText}>{errors.estado}</Text>}
-            </View>
-          </View>
+            </>
+          )}
         </ScrollView>
         
         <TouchableOpacity 
-          style={styles.confirmButton}
+          style={[
+            styles.confirmButton,
+            (isLoading || isSaving || addressLoading) && styles.disabledButton
+          ]}
           onPress={handleConfirm}
+          disabled={isLoading || isSaving || addressLoading}
         >
-          <Text style={styles.confirmButtonText}>Confirmar</Text>
+          {isSaving ? (
+            <Text style={styles.confirmButtonText}>Salvando...</Text>
+          ) : (
+            <Text style={styles.confirmButtonText}>Confirmar</Text>
+          )}
         </TouchableOpacity>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -438,7 +512,7 @@ const styles = StyleSheet.create({
   },
   disabledInput: {
     backgroundColor: '#f0f0f0',
-    color: '#666',
+    color: '#888',
   },
   inputError: {
     borderColor: '#e53935',
@@ -459,6 +533,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.7,
+    backgroundColor: '#cccccc',
   },
   loadingIcon: {
     color: '#4285F4',
