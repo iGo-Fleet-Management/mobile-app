@@ -4,11 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_IGO } from '@env';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/InputText';
+import ToggleVisibility from '../../components/common/ToggleVisibility';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
@@ -66,8 +68,7 @@ export default function LoginScreen({ navigation }) {
           if (loginResponse.data) {
             const userData = {
               ...loginResponse.data,
-              // Add additional fields if needed
-              email: email,  // Store the email since it might be needed later
+              email: email,
             };
             
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
@@ -142,54 +143,64 @@ export default function LoginScreen({ navigation }) {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.subtitle}>Entre com suas credenciais</Text>
-          <Text style={styles.title}>Login</Text>
           
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setEmailError('');
-            }}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="Digite seu email"
-            error={emailError}
-            returnKeyType="next"
-            blurOnSubmit={false}
-            style={styles.inputField}
-          />
-          
-          <Input
-            label="Senha"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              setPasswordError('');
-            }}
-            secureTextEntry
-            placeholder="Digite sua senha"
-            error={passwordError}
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-            style={styles.inputField}
-          />
-          
-          <Button
-            title="Entrar"
-            onPress={handleLogin}
-            loading={isLoading}
-            style={styles.loginButton}
-          />
-          
-          <Button
-            title="Esqueceu a senha?"
-            onPress={navigateToForgotPassword}
-            variant="outline"
-            size="small"
-            style={styles.forgotPasswordButton}
-          />
+          <View style={styles.formContainer}>
+            <Text style={styles.subtitle}>Entre com suas credenciais</Text>
+            <Text style={styles.title}>Login</Text>
+            
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setEmailError('');
+              }}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="Digite seu email"
+              error={emailError}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              style={styles.inputField}
+            />
+
+            <View style={styles.passwordContainer}>
+              <Input
+                label="Senha"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setPasswordError('');
+                }}
+                secureTextEntry={!passwordVisible}
+                placeholder="Digite sua senha"
+                error={passwordError}
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
+                style={styles.inputField}
+                inputStyle={{ paddingRight: 40 }}
+              />
+              <ToggleVisibility
+                isVisible={passwordVisible}
+                onToggle={() => setPasswordVisible(!passwordVisible)}
+              />
+            </View>
+
+            <Button
+              title="Entrar"
+              onPress={handleLogin}
+              loading={isLoading}
+              style={styles.loginButton}
+            />
+            
+            <Button
+              title="Esqueceu a senha?"
+              onPress={navigateToForgotPassword}
+              variant="outline"
+              size="small"
+              style={styles.forgotPasswordButton}
+            />
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -215,38 +226,56 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   logoContainer: {
-    width: 180,
-    height: 180,
+    width: 160,
+    height: 160,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   logo: {
     width: '100%', 
-    height: '100%', 
+    height: '100%',
+  },
+  logoSubtitle: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: -15, // Pull up the subtitle for better spacing
+    fontWeight: '500',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 30,
     color: '#333',
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#666',
     marginBottom: 10,
     textAlign: 'center',
   },
   inputField: {
     width: '100%',
+    marginBottom: 14,
+  },
+  passwordContainer: {
+    width: '100%',
+    position: 'relative',
     marginBottom: 10,
   },
   loginButton: {
     width: '100%',
-    marginTop: 10,
+    marginTop: 20,
     marginBottom: 20,
+    height: 52,
   },
   forgotPasswordButton: {
-    marginTop: 5,
+    marginTop: 10,
   },
 });

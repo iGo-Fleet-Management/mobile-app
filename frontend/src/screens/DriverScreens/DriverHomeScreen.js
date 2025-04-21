@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_IGO } from '@env';
 
 //component imports
 import BottomButton from '../../components/passengers/BottomButton';
@@ -11,6 +13,8 @@ const DriverHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [selectedTrip, setSelectedTrip] = useState('ida');
+  const [driverName, setDriverName] = useState('');
+  const [loading, setLoading] = useState(true);
   
   // Dados de exemplo
   const companyName = "Minions Vans";
@@ -20,8 +24,48 @@ const DriverHomeScreen = () => {
   const oneWayOnly = 1;
   const returnOnly = 1;
   const releasedPassengers = 3;
-  const driverName = "Roni Cristian";
   
+  useEffect(() => {
+    const fetchDriverName = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          navigation.navigate('Login');
+          return;
+        }
+
+        const response = await fetch(`${API_IGO}/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile data');
+        }
+
+        const responseData = await response.json();
+        
+        if (responseData.success && responseData.data) {
+          const { name, last_name } = responseData.data;
+          setDriverName(`${name} ${last_name}`.trim());
+        } else {
+          throw new Error('Invalid data format from API');
+        }
+      } catch (error) {
+        console.error('Error fetching driver profile:', error);
+        // Fallback to empty name if there's an error
+        setDriverName('Motorista');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDriverName();
+  }, []);
+
   const handleTripSelect = (tripType) => {
     setSelectedTrip(tripType);
   };
@@ -83,6 +127,14 @@ const DriverHomeScreen = () => {
       );
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#4285F4" />
+      </SafeAreaView>
+    );
+  }
   
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>

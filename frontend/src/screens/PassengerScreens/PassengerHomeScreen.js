@@ -6,6 +6,7 @@ import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { checkAuthAndRedirect, authHeader } from '../../auth/AuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserIcon from '../../components/common/UserIcon';
+import MapContainer from '../../components/home/PassengerMapContainer';
 import { API_IGO } from '@env';
 
 import Header from '../../components/common/Header';
@@ -38,23 +39,33 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const headers = await authHeader();
-              
-        const response = await fetch(`${API_IGO}profile`, {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          navigation.navigate('Login');
+          return;
+        }
+
+        const response = await fetch(`${API_IGO}/profile`, {
           method: 'GET',
-          headers
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
 
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile data');
+        }
+
         const responseData = await response.json();
-
-        if (responseData.success){
-          const { data } = responseData;
-
+        
+        if (responseData.success && responseData.data) {
+          const { name, last_name, addresses } = responseData.data;
           const profileData = {
-            name: data.name
-          }
+            name: `${name} ${last_name}`.trim()
+          };
 
-          const addressData = (data.addresses || []).map(address => ({
+          const addressData = (addresses || []).map(address => ({
             address_id: address.address_id,
             address_type: address.address_type,
           }));
@@ -64,10 +75,13 @@ export default function HomeScreen({ navigation }) {
           if (addressData.length > 0) {
             setSelectedGoAddress(addressData[0].address_id);
           }
+        } else {
+          throw new Error('Invalid data format from API');
         }
-        
       } catch (error) {
         console.error('Error loading user data:', error);
+        // Fallback to empty profile if there's an error
+        setUserProfileData({ name: 'Passageiro' });
       } finally {
         setIsLoading(false);
       }
@@ -435,40 +449,40 @@ export default function HomeScreen({ navigation }) {
       );
     }
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {isMapExpanded ? (
-        <View style={styles.expandedMapContainer}>
-          <MapContainer />
-          <TouchableOpacity 
-            style={styles.collapseButton}
-            onPress={toggleMapExpanded}
-          >
-            <MaterialIcons name="fullscreen-exit" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.container}>
-          <View style={styles.headerContainer}>
-            <Animated.View
-              style={[
-                styles.vanIcon,
-                {
-                  transform: [{ translateX: vanPosition }]
-                }
-              ]}
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {isMapExpanded ? (
+          <View style={styles.expandedMapContainer}>
+            <MapContainer />
+            <TouchableOpacity 
+              style={styles.collapseButton}
+              onPress={toggleMapExpanded}
             >
-              <FontAwesome5 name="shuttle-van" size={24} color={colors.primary} />
-            </Animated.View>
-            
-            <Header title="iGO" />
-            <View style={styles.userIconWrapper}>
-              <UserIcon 
-                onPress={handleUserIconPress} 
-                userName={userProfileData?.name || 'Usuário'} 
-              />
-            </View>
+              <MaterialIcons name="fullscreen-exit" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
+        ) : (
+          <View style={styles.container}>
+            <View style={styles.headerContainer}>
+              <Animated.View
+                style={[
+                  styles.vanIcon,
+                  {
+                    transform: [{ translateX: vanPosition }]
+                  }
+                ]}
+              >
+                <FontAwesome5 name="shuttle-van" size={24} color={colors.primary} />
+              </Animated.View>
+              
+              <Header title="iGO" />
+              <View style={styles.userIconWrapper}>
+                <UserIcon 
+                  onPress={handleUserIconPress} 
+                  userName={userProfileData?.name || 'Passageiro'} 
+                />
+              </View>
+            </View>
 
           <View style={styles.dateCard}>
             <Text style={styles.dayOfWeek}>{formatDayOfWeek(currentDate)}</Text>

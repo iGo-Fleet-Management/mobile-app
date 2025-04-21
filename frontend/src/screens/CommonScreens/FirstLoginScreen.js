@@ -116,7 +116,7 @@ const FirstLoginScreen = () => {
         setIsLoading(true);
         const token = await AsyncStorage.getItem('userToken');
         
-        const response = await fetch(`${API_IGO}/forgot-password/reset-password`, {
+        const response = await fetch(`${API_IGO}/auth/reset-password`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
