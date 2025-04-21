@@ -45,11 +45,6 @@ const SuggestedRouteScreen = () => {
     setPassengersReleased(!passengersReleased);
   };
 
-  const handleAddDestination = () => {
-    // Functionality to add a new destination
-    console.log('Add destination');
-  };
-
   // Get direction icon based on passenger trip type
   const getDirectionIcon = (passenger) => {
     if (passenger.tripType === 'ida') {
@@ -126,14 +121,6 @@ const SuggestedRouteScreen = () => {
 
       <ScrollView style={styles.passengersContainer}>
         {passengerList.map(passenger => renderPassengerItem(passenger))}
-        
-        <TouchableOpacity 
-          style={styles.addDestinationButton}
-          onPress={handleAddDestination}
-        >
-          <MaterialIcons name="add" size={24} color="#000" />
-          <Text style={styles.addDestinationText}>Adicionar Destino</Text>
-        </TouchableOpacity>
 
         {tripType === 'volta' && (
           <TouchableOpacity 
@@ -272,22 +259,6 @@ const styles = StyleSheet.create({
   },
   checkboxSelected: {
     backgroundColor: '#4285F4',
-  },
-  addDestinationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  addDestinationText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   releasedContainer: {
     paddingVertical: 10,

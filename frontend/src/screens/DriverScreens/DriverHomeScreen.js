@@ -4,6 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
+//component imports
+import BottomButton from '../../components/passengers/BottomButton';
+
 const DriverHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -139,12 +142,10 @@ const DriverHomeScreen = () => {
       </View>
       
       {/* Start Trip Button */}
-      <TouchableOpacity 
-        style={styles.startTripButton}
+      <BottomButton
+        text = "Trajeto"
         onPress={handleStartTrip}
-      >
-        <Text style={styles.startTripText}>Trajeto</Text>
-      </TouchableOpacity>
+      />
     </SafeAreaView>
   );
 };

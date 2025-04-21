@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 import socket from '../../utils/socket';
 import useDriverLocation from '../../utils/DriverLocation';
 import { authHeader } from '../../auth/AuthService';
-import { GOOGLE_MAPS_API_KEY } from '@env';
+import { API_IGO, GOOGLE_MAPS_API_KEY } from '@env';
 
 const DriverMapContainer = () => {
   const webViewRef = useRef(null);
@@ -20,7 +20,7 @@ const DriverMapContainer = () => {
         const date = "2025-04-19";
         const tripType = "ida";
         
-        const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-addresses?date=${date}&tripType=${tripType}`, {
+        const response = await fetch(`${API_IGO}trips/get-trip-addresses?date=${date}&tripType=${tripType}`, {
           method: 'GET',
           headers
         });
