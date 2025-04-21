@@ -3,32 +3,89 @@ import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import socket from '../../utils/socket';
 import useDriverLocation from '../../utils/DriverLocation';
+import { authHeader } from '../../auth/AuthService';
+import { GOOGLE_MAPS_API_KEY } from '@env';
 
 const DriverMapContainer = () => {
   const webViewRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeRequested, setRouteRequested] = useState(false);
+  const [routeData, setRouteData] = useState(null);
+
+  useEffect(() => {
+    const fetchRouteData = async () => {
+      const headers = await authHeader();
+      
+      try {
+        const date = "2025-04-19";
+        const tripType = "ida";
+        
+        const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-addresses?date=${date}&tripType=${tripType}`, {
+          method: 'GET',
+          headers
+        });
+        const data = await response.json();
+        const rawData = data.resume[0];
+        const processedData = await processRouteData(rawData.stops);
+
+      setRouteData(processedData);
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      }
+    };
   
+    fetchRouteData();
+  }, []);
+
+  const processRouteData = async (stops) => {
+    if (!stops || stops.length < 2) return null;
+  
+    const coordinates = await Promise.all(
+      stops.map(stop => geocodeAddress(stop.address))
+    );
+    const validCoordinates = coordinates.filter(c => c !== null);
+  
+    return {
+      origin: validCoordinates[0],
+      destination: {lat: -19.514336, lng: -42.611769 },
+      waypoints: validCoordinates.slice(1).map(location => ({ location }))
+    };
+  };
+
+  const geocodeAddress = async (address) => {
+    try {
+      const apiKey = GOOGLE_MAPS_API_KEY;
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+      );
+      const data = await response.json();
+  
+      if (data.status === 'OK') {
+        const location = data.results[0].geometry.location;
+        return {
+          lat: location.lat,
+          lng: location.lng,
+        };
+      } else {
+        console.error('Erro da API do Google Geocoding:', data.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Erro ao geocodificar endereço:', error);
+      return null;
+    }
+  };
+
   const fetchRoute = async () => {
     try {
       if (!mapLoaded || !webViewRef.current) {
         return;
       }
       
-      // Dados da rota com waypoints
-      const mockRoute = {
-        origin: { lat: -19.436412036491546, lng: -42.555229890750056 },
-        destination: { lat: -19.449008883154548, lng: -42.55561725522495 },
-        waypoints: [
-          { location: { lat: -19.441234, lng: -42.556789 } },
-          { location: { lat: -19.444567, lng: -42.558901 } }
-        ]
-      };
-      
       const jsCode = `
         try {
           if (window.calculateAndDisplayRoute) {
-            window.calculateAndDisplayRoute(${JSON.stringify(mockRoute)});
+            window.calculateAndDisplayRoute(${JSON.stringify(routeData)});
           } else {
             console.error("Função calculateAndDisplayRoute não encontrada");
           }
@@ -82,14 +139,14 @@ const DriverMapContainer = () => {
 
   useEffect(() => {
     // Só tentar exibir a rota quando o mapa estiver carregado
-    if (mapLoaded && !routeRequested) {
+    if (mapLoaded && routeData) {
       const timeout = setTimeout(() => {
         fetchRoute();
       }, 2000); // Aumente para 2 segundos para garantir que tudo está inicializado
       
       return () => clearTimeout(timeout);
     }
-  }, [mapLoaded, routeRequested]);
+  }, [mapLoaded, routeData]);
 
   const mapSource = require('../../../assets/driverMap.html');
 
