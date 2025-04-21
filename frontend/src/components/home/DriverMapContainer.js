@@ -20,7 +20,7 @@ const DriverMapContainer = () => {
         const date = "2025-04-19";
         const tripType = "ida";
         
-        const response = await fetch(`${API_IGO}trips/get-trip-addresses?date=${date}&tripType=${tripType}`, {
+        const response = await fetch(`${API_IGO}trips/get-trip-data?date=${date}&tripType=${tripType}`, {
           method: 'GET',
           headers
         });

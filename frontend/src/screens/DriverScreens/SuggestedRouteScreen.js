@@ -1,22 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { authHeader } from '../../auth/AuthService';
 
 const SuggestedRouteScreen = () => {
   const navigation = useNavigation();
   const [tripType, setTripType] = useState('ida'); // 'ida' or 'volta'
-  const [selectedPassengers, setSelectedPassengers] = useState([1, 2, 5]); // IDs of selected passengers
-  const [passengersReleased, setPassengersReleased] = useState(true);
-  
-  // Mock passenger data with trip type information
-  const passengerList = [
-    { id: 1, name: 'Hugo de Melo', tripType: 'round' }, // Vai e volta
-    { id: 2, name: 'Lucas Barcelos', tripType: 'ida' }, // Só ida
-    { id: 3, name: 'Paulo Henrique', tripType: 'round' }, // Vai e volta
-    { id: 4, name: 'Samuel Andrade', tripType: 'volta' }, // Só volta
-    { id: 5, name: 'Rafael Galinari', tripType: 'round' }, // Vai e volta
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [passengerList, setPassengerList] = useState([]);
+  const [releasedUsers, setReleasedUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchTripData = async () => {
+      const headers = await authHeader();
+      setLoading(true);
+
+      try {
+        const date = "2025-04-19";
+        
+        const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-resume?date=${date}`, {
+          method: 'GET',
+          headers
+        });
+
+        const data = await response.json();
+
+        // ADICIONADO: Buscar usuários liberados
+        const releasedResponse = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-released-users?date=${date}`, {
+          method: 'GET',
+          headers
+        });
+
+        const releasedData = await releasedResponse.json();
+        
+        // ADICIONADO: Armazenar IDs dos usuários liberados
+        if (releasedData.status === "success") {
+          setReleasedUsers(releasedData.data.map(user => user.user_id));
+        }
+
+        if (data.status === "success") {
+          // Transformar os dados da API em uma lista de passageiros
+          const transformedPassengers = [];
+          
+          // Passageiros ida e volta
+          if (data.resume[0].users_ida_e_volta) {
+            data.resume[0].users_ida_e_volta.forEach(userObj => {
+              transformedPassengers.push({
+                id: userObj.user_id,
+                name: userObj.full_name,
+                tripType: 'round'
+              });
+            });
+          }
+          
+          // Passageiros somente ida
+          if (data.resume[0].users_somente_ida && data.resume[0].users_somente_ida !== null) {
+            data.resume[0].users_somente_ida.forEach(userObj => {  // Use "userObj" em vez de "user"
+              transformedPassengers.push({
+                id: userObj.user_id,
+                name: userObj.full_name,
+                tripType: 'ida'
+              });
+            });
+          }
+          
+          // Passageiros somente volta
+          if (data.resume[0].users_somente_volta && data.resume[0].users_somente_volta !== null) {
+            data.resume[0].users_somente_volta.forEach(userObj => {  // Use "userObj" em vez de "user"
+              transformedPassengers.push({
+                id: userObj.user_id,
+                name: userObj.full_name,
+                tripType: 'volta'
+              });
+            });
+          }
+          
+          setPassengerList(transformedPassengers);
+        }
+
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+        setError('Falha ao carregar dados da viagem');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTripData();
+  }, [])
 
   const handleStartTrip = () => {
     // Navigate to active trip screen
@@ -31,18 +104,8 @@ const SuggestedRouteScreen = () => {
     setTripType(type);
   };
 
-  const togglePassengerSelection = (passengerId) => {
-    setSelectedPassengers(prevSelected => {
-      if (prevSelected.includes(passengerId)) {
-        return prevSelected.filter(id => id !== passengerId);
-      } else {
-        return [...prevSelected, passengerId];
-      }
-    });
-  };
-
-  const togglePassengersReleased = () => {
-    setPassengersReleased(!passengersReleased);
+  const isPassengerReleased = (passenger) => {
+    return releasedUsers.includes(passenger.id);
   };
 
   // Get direction icon based on passenger trip type
@@ -58,7 +121,7 @@ const SuggestedRouteScreen = () => {
   };
 
   const renderPassengerItem = (passenger) => {
-    const isSelected = selectedPassengers.includes(passenger.id);
+    const isReleased = isPassengerReleased(passenger);
     
     return (
       <View key={passenger.id} style={styles.passengerCard}>
@@ -75,24 +138,23 @@ const SuggestedRouteScreen = () => {
         
         {/* Show direction icon for Ida tab, checkbox for Volta tab */}
         <View style={styles.actionContainer}>
-          {tripType === 'ida' ? (
-            <View style={styles.directionContainer}>
-              {getDirectionIcon(passenger)}
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => togglePassengerSelection(passenger.id)}
-            >
-              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                {isSelected && <MaterialIcons name="check" size={16} color="#fff" />}
+        {tripType === 'ida' ? (
+          <View style={styles.directionContainer}>
+            {getDirectionIcon(passenger)}
+          </View>
+        ) : (
+          <View style={styles.actionsWrapper}>
+            {isReleased && (
+              <View style={styles.releasedIndicator}>
+                <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
               </View>
-            </TouchableOpacity>
-          )}
-        </View>
+            )}
+          </View>
+        )}
       </View>
-    );
-  };
+    </View>
+  );
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -123,17 +185,12 @@ const SuggestedRouteScreen = () => {
         {passengerList.map(passenger => renderPassengerItem(passenger))}
 
         {tripType === 'volta' && (
-          <TouchableOpacity 
-            style={styles.releasedContainer}
-            onPress={togglePassengersReleased}
-          >
-            <View style={styles.releasedCheckboxContainer}>
-              <View style={[styles.checkbox, passengersReleased && styles.checkboxSelected]}>
-                {passengersReleased && <MaterialIcons name="check" size={16} color="#fff" />}
-              </View>
-              <Text style={styles.releasedText}>Passageiros liberados</Text>
+          <View style={styles.releasedInfoContainer}>
+            <View style={styles.releasedStatusLegend}>
+              <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
+              <Text style={styles.releasedInfoText}>Passageiros liberados</Text>
             </View>
-          </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
 
@@ -235,43 +292,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   actionContainer: {
-    width: 40, // Largura fixa para os ícones/checkboxes
+    width: 70, // Aumentado para acomodar ambos os ícones
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  directionContainer: {
+  actionsWrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    width: '100%',
   },
-  checkboxContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  releasedIndicator: {
+    marginRight: 10,
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#4285F4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  checkboxSelected: {
-    backgroundColor: '#4285F4',
-  },
-  releasedContainer: {
+  releasedInfoContainer: {
     paddingVertical: 10,
     marginBottom: 10,
     alignItems: 'center',
   },
-  releasedCheckboxContainer: {
+  releasedStatusLegend: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
   },
-  releasedText: {
+  releasedInfoText: {
     marginLeft: 8,
     fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  directionContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   startButton: {
     backgroundColor: '#4285F4',
