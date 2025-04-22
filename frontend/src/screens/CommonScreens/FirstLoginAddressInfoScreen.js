@@ -35,7 +35,7 @@ const FirstLoginAddressInfoScreen = () => {
   const [estado, setEstado] = useState('');
   const [addressLoading, setAddressLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [addressTypeOptions] = useState(['Casa', 'Trabalho', 'Outro']);
+  const [addressTypeOptions] = useState(['Casa', 'Outro']);
   const [addressTypeModalVisible, setAddressTypeModalVisible] = useState(false);
 
   // This API call is optional since we're updating a new address
@@ -176,23 +176,28 @@ const FirstLoginAddressInfoScreen = () => {
         const token = await AsyncStorage.getItem('userToken');
         
         const response = await fetch(`${API_IGO}profile/update-address`, {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            type: addressType,
-            zip_code: cep.replace(/\D/g, ''),
-            street: logradouro,
-            number: numero,
-            complement: complemento,
-            neighborhood: bairro,
-            city: cidade,
-            state: estado,
-            is_default: true
+            addressData:[{
+              address_type: addressType,
+              cep: cep.replace(/\D/g, ''),
+              street: logradouro,
+              number: numero,
+              complement: complemento,
+              neighbourhood: bairro,
+              city: cidade,
+              state: estado,
+            }]
           })
         });
+
+        const responseText = await response.text();
+        console.log('Status:', response.status);
+        console.log('Response:', responseText);
         
         if (!response.ok) {
           throw new Error('Failed to update address');

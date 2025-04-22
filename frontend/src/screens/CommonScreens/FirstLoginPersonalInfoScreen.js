@@ -24,7 +24,7 @@ const FirstLoginPersonalInfoScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   
   const [name, setName] = useState('');
-  const [surname, setSurname] = useState('');
+  const [last_name, setLastName] = useState('');
   const [cpf, setCpf] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [email, setEmail] = useState('');
@@ -53,10 +53,9 @@ const FirstLoginPersonalInfoScreen = () => {
         
         const responseData = await response.json();
         const userData = responseData.data;
-        console.log(userData)
 
         setName(userData.name || '');
-        setSurname(userData.last_name || '');
+        setLastName(userData.last_name || '');
         setCpf(userData.cpf || '');
         setBirthDate(userData.birth_date || '');
         setEmail(userData.email || '');
@@ -108,8 +107,8 @@ const FirstLoginPersonalInfoScreen = () => {
       newErrors.name = 'Nome é obrigatório';
     }
     
-    if (!surname.trim()) {
-      newErrors.surname = 'Sobrenome é obrigatório';
+    if (!last_name.trim()) {
+      newErrors.last_name = 'Sobrenome é obrigatório';
     }
     
     if (!cpf.trim() || cpf.length < 14) {
@@ -142,25 +141,41 @@ const FirstLoginPersonalInfoScreen = () => {
       try {
         setIsSaving(true);
         const token = await AsyncStorage.getItem('userToken');
+        console.log(token);
         
         const [day, month, year] = birthDate.split('/');
         const formattedBirthDate = `${year}-${month}-${day}`;
+
+        console.log('Dados enviados:', {
+          name,
+          last_name,
+          cpf: cpf.replace(/\D/g, ''),
+          birthdate: formattedBirthDate,
+          email,
+          phone: phone.replace(/\D/g, '')
+        });
         
         const response = await fetch(`${API_IGO}profile/update-profile`, {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: `${name} ${surname}`.trim(),
-            email,
-            cpf: cpf.replace(/\D/g, ''),
-            birth_date: formattedBirthDate,
-            phone: phone.replace(/\D/g, '')
+            userData: {
+              name,
+              last_name,
+              cpf: cpf.replace(/\D/g, ''),
+              birthdate: formattedBirthDate,
+              email,
+              phone: phone.replace(/\D/g, '')
+            }
           })
         });
         
+        const responseData = await response.json();
+        console.log(responseData);
+
         if (!response.ok) {
           throw new Error('Failed to update profile');
         }
@@ -218,13 +233,13 @@ const FirstLoginPersonalInfoScreen = () => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Sobrenome</Text>
                   <TextInput
-                    style={[styles.input, errors.surname ? styles.inputError : null]}
-                    value={surname}
-                    onChangeText={setSurname}
+                    style={[styles.input, errors.last_name ? styles.inputError : null]}
+                    value={last_name}
+                    onChangeText={setLastName}
                     placeholder="Sobrenome"
                     autoCapitalize="words"
                   />
-                  {errors.surname && <Text style={styles.errorText}>{errors.surname}</Text>}
+                  {errors.last_name && <Text style={styles.errorText}>{errors.last_name}</Text>}
                 </View>
                 
                 <View style={styles.inputContainer}>

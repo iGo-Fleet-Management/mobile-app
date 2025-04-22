@@ -19,8 +19,6 @@ import Skeleton from '../../components/common/Skeleton';
 
 const FirstLoginScreen = () => {
   const navigation = useNavigation();
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
   const [password, setPassword] = useState('');
@@ -28,46 +26,6 @@ const FirstLoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) {
-          navigation.navigate('Login');
-          return;
-        }
-        
-        const response = await fetch(`${API_IGO}profile`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile data');
-        }
-        
-        const responseData = await response.json();
-        
-        if (responseData.success && responseData.data) {
-          setUserName(responseData.data.name || '');
-          setUserEmail(responseData.data.email || '');
-        } else {
-          throw new Error('Invalid data format from API');
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        Alert.alert('Erro', 'Não foi possível recuperar seus dados. Por favor, tente novamente.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchUserProfile();
-  }, []);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -132,13 +90,7 @@ const FirstLoginScreen = () => {
           throw new Error('Failed to update password');
         }
 
-        const responseData = {
-          data: {
-            message: "Senha atualizada com sucesso",
-            token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWY0MTJlOGUtZWE2ZS00MGE0LWFlMGUtYzQ1NzQ3NGQyZmQ0IiwidXNlcl90eXBlIjoicGFzc2FnZWlybyIsInJlc2V0X3Bhc3N3b3JkIjpmYWxzZSwiaWF0IjoxNzQ1MzQxMDM0LCJleHAiOjE3NDc5MzMwMzR9.1bzH4puAAaS5HMevfnQUFsYH5rXy13huZf8sZBXxajo"
-          },
-          success: true
-        };
+        const responseData = await response.json();
 
         const newToken = responseData.data.token;
         console.log('Novo token: ', newToken);
@@ -162,7 +114,7 @@ const FirstLoginScreen = () => {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.welcomeTitle}>Bem vindo {userName}!</Text>
+          <Text style={styles.welcomeTitle}>Bem vindo!</Text>
           
           <Text style={styles.welcomeMessage}>
             Seu motorista já criou seu usuário previamente!

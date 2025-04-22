@@ -60,7 +60,6 @@ export default function LoginScreen({ navigation }) {
         // Check if the response has the expected structure
         if (loginResponse.data && loginResponse.data.token) {
           const token = loginResponse.data.token;
-          console.log('login: ', token)
           // Store the token securely
           await AsyncStorage.setItem('userToken', token);
           
