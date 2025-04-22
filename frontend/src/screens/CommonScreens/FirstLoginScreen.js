@@ -14,6 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { API_IGO } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { removeToken } from '../../auth/AuthService';
 import Skeleton from '../../components/common/Skeleton';
 
 const FirstLoginScreen = () => {
@@ -37,7 +38,7 @@ const FirstLoginScreen = () => {
           return;
         }
         
-        const response = await fetch(`${API_IGO}/profile`, {
+        const response = await fetch(`${API_IGO}profile`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -116,7 +117,7 @@ const FirstLoginScreen = () => {
         setIsLoading(true);
         const token = await AsyncStorage.getItem('userToken');
         
-        const response = await fetch(`${API_IGO}/auth/reset-password`, {
+        const response = await fetch(`${API_IGO}auth/reset-password`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -130,7 +131,23 @@ const FirstLoginScreen = () => {
         if (!response.ok) {
           throw new Error('Failed to update password');
         }
-        
+
+        const responseData = {
+          data: {
+            message: "Senha atualizada com sucesso",
+            token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWY0MTJlOGUtZWE2ZS00MGE0LWFlMGUtYzQ1NzQ3NGQyZmQ0IiwidXNlcl90eXBlIjoicGFzc2FnZWlybyIsInJlc2V0X3Bhc3N3b3JkIjpmYWxzZSwiaWF0IjoxNzQ1MzQxMDM0LCJleHAiOjE3NDc5MzMwMzR9.1bzH4puAAaS5HMevfnQUFsYH5rXy13huZf8sZBXxajo"
+          },
+          success: true
+        };
+
+        const newToken = responseData.data.token;
+        console.log('Novo token: ', newToken);
+
+        await AsyncStorage.removeItem('userToken');
+        await AsyncStorage.removeItem('userData');
+
+        await AsyncStorage.setItem('userToken', newToken);
+
         navigation.navigate('FirstLoginPersonalInfo');
       } catch (error) {
         console.error('Error updating password:', error);

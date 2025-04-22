@@ -53,16 +53,13 @@ const FirstLoginPersonalInfoScreen = () => {
         
         const responseData = await response.json();
         const userData = responseData.data;
-        
-        if (userData.name) {
-          const nameParts = userData.name.split(' ');
-          setName(nameParts[0] || '');
-          setSurname(nameParts.slice(1).join(' ') || '');
-        }
-        
-        setEmail(userData.email || '');
+        console.log(userData)
+
+        setName(userData.name || '');
+        setSurname(userData.last_name || '');
         setCpf(userData.cpf || '');
         setBirthDate(userData.birth_date || '');
+        setEmail(userData.email || '');
         setPhone(userData.phone || '');
       } catch (error) {
         console.error('Error fetching profile:', error);

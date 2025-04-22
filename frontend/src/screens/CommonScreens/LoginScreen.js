@@ -48,7 +48,7 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_IGO}auth/login`, {
+      const response = await fetch(`${API_IGO}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -60,7 +60,7 @@ export default function LoginScreen({ navigation }) {
         // Check if the response has the expected structure
         if (loginResponse.data && loginResponse.data.token) {
           const token = loginResponse.data.token;
-          
+          console.log('login: ', token)
           // Store the token securely
           await AsyncStorage.setItem('userToken', token);
           
@@ -76,7 +76,12 @@ export default function LoginScreen({ navigation }) {
           
           // Route based on user type
           if (loginResponse.data.user_type) {
-            if (loginResponse.data.user_type === 'motorista') {
+            if (loginResponse.data.reset_password) {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'FirstLogin' }],
+              });
+            } else if (loginResponse.data.user_type === 'motorista') {
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'DriverHomeScreen' }],
@@ -85,11 +90,6 @@ export default function LoginScreen({ navigation }) {
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'PassengerHomeScreen' }],
-              });
-            } else if (loginResponse.data.reset_password) {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'FirstLogin' }],
               });
             } else {
               navigation.reset({
