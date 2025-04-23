@@ -11,7 +11,8 @@ import {
   Keyboard, 
   Modal,
   Alert,
-  Platform
+  Platform,
+  StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authHeader } from '../../auth/AuthService';
@@ -152,15 +153,18 @@ const PassengersScreen = ({ navigation, route }) => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+          
+          {/* Fixed Header Structure */}
           <View style={styles.header}>
             <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
               <MaterialIcons name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
+            <Text style={styles.headerTitle}>Passageiros</Text>
+            <View style={styles.headerRightPlaceholder} />
           </View>
-
-          <Text style={styles.headerTitle}>Passageiros</Text>
-
+  
           <View style={styles.searchContainer}>
             <View style={styles.searchBar}>
               <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -252,6 +256,7 @@ const PassengersScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
@@ -263,9 +268,12 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   backButton: {
     padding: 4,
@@ -273,19 +281,33 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
+    position: 'absolute',
+    left: 0,
+    right: 0,
     textAlign: 'center',
-    marginBottom: 10,
+    zIndex: -1,
+  },
+  headerRight: {
+    width: 24,
+  },
+  headerRightPlaceholder: {
+    width: 24,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   searchContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    marginVertical: 12,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 8,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#ddd',
   },
@@ -295,9 +317,14 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 24,
-    fontSize: 14,
-    padding: 0,
+    fontSize: 16,
     color: '#000',
+  },
+  passengersScroll: {
+    flex: 1,
+  },
+  passengersContent: {
+    paddingBottom: 80,
   },
   passengersContainer: {
     flex: 1,
@@ -322,14 +349,26 @@ const styles = StyleSheet.create({
   passengerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 10,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
-    height: 56,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  bottomSpacer: {
+    height: 20,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
   },
   passengerInfo: {
     flexDirection: 'row',
