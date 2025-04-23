@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  SafeAreaView, 
+  ScrollView,
+  StatusBar,
+  Modal,
+  Alert
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { authHeader } from '../../auth/AuthService';
@@ -7,11 +17,12 @@ import { API_IGO } from '@env';
 
 const SuggestedRouteScreen = () => {
   const navigation = useNavigation();
-  const [tripType, setTripType] = useState('ida'); // 'ida' or 'volta'
+  const [tripType, setTripType] = useState('ida');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [passengerList, setPassengerList] = useState([]);
   const [releasedUsers, setReleasedUsers] = useState([]);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   useEffect(() => {
     const fetchTripData = async () => {
@@ -93,12 +104,20 @@ const SuggestedRouteScreen = () => {
   }, [])
 
   const handleStartTrip = () => {
-    // Navigate to active trip screen
     navigation.navigate('ActiveTrip');
   };
 
   const handleGoBack = () => {
+    setShowExitModal(true);
+  };
+
+  const confirmExit = () => {
     navigation.goBack();
+    setShowExitModal(false);
+  };
+
+  const cancelExit = () => {
+    setShowExitModal(false);
   };
 
   const toggleTripType = (type) => {
