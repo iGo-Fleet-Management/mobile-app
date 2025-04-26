@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authHeader } from '../../auth/AuthService';
 import { API_IGO } from '@env';
 
 //component imports
@@ -15,15 +16,18 @@ const DriverHomeScreen = () => {
   const [selectedTrip, setSelectedTrip] = useState('ida');
   const [driverName, setDriverName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
+  const [totalPassengersIda, setTotalPassengersIda] = useState(0);
+  const [totalPassengersVolta, setTotalPassengersVolta] = useState(0);
+  const [oneWayOnly, setOneWayOnly] = useState(0);
+  const [returnOnly, setReturnOnly] = useState(0);
+  const [releasedPassengers, setReleasedPassengers] = useState(0);
+
   // Dados de exemplo
   const companyName = "Minions Vans";
   const date = new Date();
   const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-  const totalPassengers = 5;
-  const oneWayOnly = 1;
-  const returnOnly = 1;
-  const releasedPassengers = 3;
   
   useEffect(() => {
     const fetchDriverName = async () => {
@@ -65,6 +69,54 @@ const DriverHomeScreen = () => {
 
     fetchDriverName();
   }, []);
+  
+  const fetchTripResume = async () => {
+    try {
+      const headers = await authHeader();
+      const date = '2025-04-19'
+      //const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
+          
+      const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-resume?date=${date}`, {
+        method: 'GET',
+        headers
+      });
+  
+      const data = await response.json();
+      console.log(data);
+
+      if (data.status === "success") {
+        if (data.resume.length > 0) {
+          const resume = data.resume[0];
+          const idaEVolta = parseInt(resume.ida_e_volta) || 0;
+          const somenteIda = parseInt(resume.somente_ida) || 0;
+          const somenteVolta = parseInt(resume.somente_volta) || 0;
+  
+          const totalIda = idaEVolta + somenteIda;
+          const totalVolta = idaEVolta + somenteVolta;
+  
+          setTotalPassengersIda(totalIda);
+          setTotalPassengersVolta(totalVolta);
+          setOneWayOnly(somenteIda);
+          setReturnOnly(somenteVolta);
+        } else {
+          // Quando não há resumo, zere os valores
+          setTotalPassengersIda(0);
+          setTotalPassengersVolta(0);
+          setOneWayOnly(0);
+          setReturnOnly(0);
+        }
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching trip resume:', error);
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchTripResume();
+  } , []);
 
   const handleTripSelect = (tripType) => {
     setSelectedTrip(tripType);
@@ -87,7 +139,7 @@ const DriverHomeScreen = () => {
         <>
           <View style={styles.summaryItemContainer}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{totalPassengers}</Text>
+              <Text style={styles.summaryValue}>{totalPassengersIda}</Text>
               <Text style={styles.summaryLabel}>Passageiros</Text>
             </View>
             
@@ -104,7 +156,7 @@ const DriverHomeScreen = () => {
         <>
           <View style={styles.summaryItemContainer}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{totalPassengers}</Text>
+              <Text style={styles.summaryValue}>{totalPassengersVolta}</Text>
               <Text style={styles.summaryLabel}>Passageiros</Text>
               <MaterialIcons name="people" size={16} color="#777" />
             </View>
@@ -128,6 +180,17 @@ const DriverHomeScreen = () => {
     }
   };
 
+  const onRefresh = async () => {
+  try {
+    setRefreshing(true);
+    await fetchTripResume();
+  } catch (error) {
+    console.error('Erro ao atualizar:', error);
+  } finally {
+    setRefreshing(false);
+  }
+};
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
@@ -140,64 +203,71 @@ const DriverHomeScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>iGO</Text>
-        <View style={styles.profileContainer}>
-          <TouchableOpacity onPress={handleProfilePress}>
-            <Text style={styles.driverName}>{driverName}</Text>
+      <ScrollView
+        scrollEnabled={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.logo}>iGO</Text>
+          <View style={styles.profileContainer}>
+            <TouchableOpacity onPress={handleProfilePress}>
+              <Text style={styles.driverName}>{driverName}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.profileIcon} onPress={handleProfilePress}>
+              <MaterialIcons name="person" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        {/* Company Name */}
+        <Text style={styles.companyName}>{companyName}</Text>
+        
+        {/* Trip Type Selection */}
+        <View style={styles.tripTypeContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tripTypeButton,
+              selectedTrip === 'ida' && styles.selectedTripButton
+            ]}
+            onPress={() => handleTripSelect('ida')}
+          >
+            <Text style={[
+              styles.tripTypeText,
+              selectedTrip === 'ida' && styles.selectedTripText
+            ]}>Ida</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.profileIcon} onPress={handleProfilePress}>
-            <MaterialIcons name="person" size={24} color="#000" />
+          
+          <TouchableOpacity
+            style={[
+              styles.tripTypeButton,
+              selectedTrip === 'volta' && styles.selectedTripButton
+            ]}
+            onPress={() => handleTripSelect('volta')}
+          >
+            <Text style={[
+              styles.tripTypeText,
+              selectedTrip === 'volta' && styles.selectedTripText
+            ]}>Volta</Text>
           </TouchableOpacity>
         </View>
-      </View>
-      
-      {/* Company Name */}
-      <Text style={styles.companyName}>{companyName}</Text>
-      
-      {/* Trip Type Selection */}
-      <View style={styles.tripTypeContainer}>
-        <TouchableOpacity
-          style={[
-            styles.tripTypeButton,
-            selectedTrip === 'ida' && styles.selectedTripButton
-          ]}
-          onPress={() => handleTripSelect('ida')}
-        >
-          <Text style={[
-            styles.tripTypeText,
-            selectedTrip === 'ida' && styles.selectedTripText
-          ]}>Ida</Text>
-        </TouchableOpacity>
         
-        <TouchableOpacity
-          style={[
-            styles.tripTypeButton,
-            selectedTrip === 'volta' && styles.selectedTripButton
-          ]}
-          onPress={() => handleTripSelect('volta')}
-        >
-          <Text style={[
-            styles.tripTypeText,
-            selectedTrip === 'volta' && styles.selectedTripText
-          ]}>Volta</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Daily Summary */}
-      <View style={styles.summaryContainer}>
-        <Text style={styles.summaryTitle}>Resumo do Dia</Text>
-        <Text style={styles.summaryDate}>{formattedDate}</Text>
+        {/* Daily Summary */}
+        <View style={styles.summaryContainer}>
+          <Text style={styles.summaryTitle}>Resumo do Dia</Text>
+          <Text style={styles.summaryDate}>{formattedDate}</Text>
+          
+          {renderSummaryContent()}
+        </View>
+        </ScrollView>
         
-        {renderSummaryContent()}
-      </View>
-      
-      {/* Start Trip Button */}
-      <BottomButton
-        text = "Trajeto"
-        onPress={handleStartTrip}
-      />
+        {/* Start Trip Button */}
+        <BottomButton
+          text = "Trajeto"
+          onPress={handleStartTrip}
+        />
     </SafeAreaView>
   );
 };
