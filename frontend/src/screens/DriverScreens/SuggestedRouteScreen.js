@@ -22,7 +22,6 @@ const SuggestedRouteScreen = () => {
   const [error, setError] = useState(null);
   const [passengerList, setPassengerList] = useState([]);
   const [releasedUsers, setReleasedUsers] = useState([]);
-  const [showExitModal, setShowExitModal] = useState(false);
 
   useEffect(() => {
     const fetchTripData = async () => {
@@ -108,16 +107,7 @@ const SuggestedRouteScreen = () => {
   };
 
   const handleGoBack = () => {
-    setShowExitModal(true);
-  };
-
-  const confirmExit = () => {
     navigation.goBack();
-    setShowExitModal(false);
-  };
-
-  const cancelExit = () => {
-    setShowExitModal(false);
   };
 
   const toggleTripType = (type) => {
