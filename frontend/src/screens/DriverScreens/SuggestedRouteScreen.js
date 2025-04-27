@@ -146,22 +146,21 @@ const SuggestedRouteScreen = () => {
           </View>
         </View>
         
-        {/* Show direction icon for Ida tab, checkbox for Volta tab */}
         <View style={styles.actionContainer}>
-        {tripType === 'ida' ? (
-          <View style={styles.directionContainer}>
-            {getDirectionIcon(passenger)}
-          </View>
-        ) : (
+
           <View style={styles.actionsWrapper}>
-            {isReleased && (
+            {tripType === 'volta' && isReleased && (
               <View style={styles.releasedIndicator}>
                 <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
               </View>
             )}
           </View>
-        )}
-      </View>
+          
+          <View style={styles.directionIconContainer}>
+            {getDirectionIcon(passenger)}
+          </View>
+
+        </View>
     </View>
   );
 };
@@ -192,7 +191,12 @@ const SuggestedRouteScreen = () => {
       <Text style={styles.headerTitle}>Rota Sugerida</Text>
 
       <ScrollView style={styles.passengersContainer}>
-        {passengerList.map(passenger => renderPassengerItem(passenger))}
+      {passengerList
+        .filter(passenger => {
+          // Exibir apenas passageiros com o tripType correspondente
+          return passenger.tripType === tripType || passenger.tripType === 'round';
+        })
+        .map(passenger => renderPassengerItem(passenger))}
 
         {tripType === 'volta' && (
           <View style={styles.releasedInfoContainer}>
@@ -302,14 +306,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   actionContainer: {
-    width: 70, // Aumentado para acomodar ambos os ícones
+    flexDirection: 'row',
+    width: 60, // Mais largo para acomodar os dois ícones lado a lado
+    justifyContent: 'flex-end', // Centraliza quando há apenas um ícone
     alignItems: 'center',
+    paddingHorizontal: 5,
   },
   actionsWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    width: '100%',
+  },
+  directionIconContainer: {
+    width: 24, // Largura fixa
+    alignItems: 'center',
   },
   releasedIndicator: {
     marginRight: 10,
@@ -332,10 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4CAF50',
     fontWeight: '500',
-  },
-  directionContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   startButton: {
     backgroundColor: '#4285F4',

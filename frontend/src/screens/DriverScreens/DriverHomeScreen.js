@@ -76,14 +76,12 @@ const DriverHomeScreen = () => {
       const date = '2025-04-19'
       //const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
-          
       const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-resume?date=${date}`, {
         method: 'GET',
         headers
       });
-  
+      
       const data = await response.json();
-      console.log(data);
 
       if (data.status === "success") {
         if (data.resume.length > 0) {
@@ -91,10 +89,10 @@ const DriverHomeScreen = () => {
           const idaEVolta = parseInt(resume.ida_e_volta) || 0;
           const somenteIda = parseInt(resume.somente_ida) || 0;
           const somenteVolta = parseInt(resume.somente_volta) || 0;
-  
+          
           const totalIda = idaEVolta + somenteIda;
           const totalVolta = idaEVolta + somenteVolta;
-  
+          
           setTotalPassengersIda(totalIda);
           setTotalPassengersVolta(totalVolta);
           setOneWayOnly(somenteIda);
@@ -106,6 +104,20 @@ const DriverHomeScreen = () => {
           setOneWayOnly(0);
           setReturnOnly(0);
         }
+        
+        const releasedResponse = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-released-users?date=${date}`, {
+          method: 'GET',
+          headers
+        });
+
+        const releasedData = await releasedResponse.json()
+
+        if (releasedData.status === "success") {
+          setReleasedPassengers(releasedData.data.length);
+        } else {
+          setReleasedPassengers(0);
+        }
+
       }
       setLoading(false);
     } catch (error) {
@@ -141,6 +153,7 @@ const DriverHomeScreen = () => {
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>{totalPassengersIda}</Text>
               <Text style={styles.summaryLabel}>Passageiros</Text>
+              <MaterialIcons name="people" size={16} color="#777" />
             </View>
             
             <View style={styles.summaryItem}>
