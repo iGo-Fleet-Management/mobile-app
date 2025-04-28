@@ -29,7 +29,7 @@ const SuggestedRouteScreen = () => {
       setLoading(true);
 
       try {
-        const date = "2025-04-19";
+        const date = "2025-04-28";
         
         const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${date}`, {
           method: 'GET',
@@ -103,7 +103,8 @@ const SuggestedRouteScreen = () => {
   }, [])
 
   const handleStartTrip = () => {
-    navigation.navigate('ActiveTrip');
+    console.log('Iniciando viagem com tipo:', tripType);
+    navigation.navigate('ActiveTrip', { tripType });
   };
 
   const handleGoBack = () => {

@@ -73,10 +73,10 @@ const DriverHomeScreen = () => {
   const fetchTripResume = async () => {
     try {
       const headers = await authHeader();
-      const date = '2025-04-19'
+      const date = '2025-04-28'
       //const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
-      const response = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-resume?date=${date}`, {
+      const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${date}`, {
         method: 'GET',
         headers
       });
@@ -105,7 +105,7 @@ const DriverHomeScreen = () => {
           setReturnOnly(0);
         }
         
-        const releasedResponse = await fetch(`http://192.168.1.64:5000/api/trips/get-trip-released-users?date=${date}`, {
+        const releasedResponse = await fetch(`${API_IGO}trips/get-trip-released-users?date=${date}`, {
           method: 'GET',
           headers
         });

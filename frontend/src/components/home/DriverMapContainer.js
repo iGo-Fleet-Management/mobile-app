@@ -6,7 +6,7 @@ import useDriverLocation from '../../utils/DriverLocation';
 import { authHeader } from '../../auth/AuthService';
 import { API_IGO, GOOGLE_MAPS_API_KEY } from '@env';
 
-const DriverMapContainer = () => {
+const DriverMapContainer = ({ tripType }) => {
   const webViewRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeRequested, setRouteRequested] = useState(false);
@@ -17,16 +17,16 @@ const DriverMapContainer = () => {
       const headers = await authHeader();
       
       try {
-        const date = "2025-04-19";
-        const tripType = "ida";
-        
+        const date = "2025-04-28";
+        console.log(tripType)
+
         const response = await fetch(`${API_IGO}trips/get-trip-data?date=${date}&tripType=${tripType}`, {
           method: 'GET',
           headers
         });
         const data = await response.json();
         const rawData = data.resume[0];
-        const processedData = await processRouteData(rawData.stops);
+        const processedData = await processRouteData(rawData.stops, tripType);
 
       setRouteData(processedData);
       } catch (error) {
@@ -37,13 +37,23 @@ const DriverMapContainer = () => {
     fetchRouteData();
   }, []);
 
-  const processRouteData = async (stops) => {
+  const processRouteData = async (stops, tripType) => {
     if (!stops || stops.length < 2) return null;
+
     const coordinates = await Promise.all(
       stops.map(stop => geocodeAddress(stop.address))
     );
     const validCoordinates = coordinates.filter(c => c !== null);
   
+    if (tripType === 'volta') {
+      validCoordinates.reverse();
+      return {
+        origin: {lat: -19.514336, lng: -42.611769 },
+        destination: validCoordinates[0],
+        waypoints: validCoordinates.slice(1).map(location => ({ location }))
+      };
+    }
+
     return {
       origin: validCoordinates[0],
       destination: {lat: -19.514336, lng: -42.611769 },
@@ -55,7 +65,8 @@ const DriverMapContainer = () => {
     try {
       const apiKey = GOOGLE_MAPS_API_KEY;
       const fullAddress = `${address.street}, ${address.number}, ${address.neighbourhood}, ${address.city} - ${address.state}`;
-      
+      console.log('Endereço completo:', fullAddress);
+
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`
       );
