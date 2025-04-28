@@ -116,11 +116,34 @@ const PassengersScreen = ({ navigation, route }) => {
         {
           text: "Remover",
           style: "destructive",
-          onPress: () => {
-            // Aqui você deve implementar a lógica real de remoção com sua API
-            const novaLista = passageiros.filter(p => p.id !== passageiroId);
-            setPassageiros(novaLista);
-            closeModal();
+          onPress: async () => {
+            try {
+              // Chamada para a API para excluir o usuário
+              const response = await fetch(`https://backend-igo.onrender.com/api/users/delete-user/${passageiroId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              });
+              
+              const data = await response.json();
+              
+              if (data.success) {
+                // Se a exclusão for bem-sucedida, atualiza a lista local
+                const novaLista = passageiros.filter(p => p.id !== passageiroId);
+                setPassageiros(novaLista);
+                closeModal();
+                // Você pode adicionar uma notificação de sucesso aqui
+                Alert.alert("Sucesso", data.message);
+              } else {
+                // Se houver erro na resposta da API
+                Alert.alert("Erro", data.message || "Erro ao excluir usuário");
+              }
+            } catch (error) {
+              // Tratamento de erro na chamada da API
+              console.error("Erro ao excluir usuário:", error);
+              Alert.alert("Erro", "Ocorreu um erro ao tentar excluir o usuário. Tente novamente.");
+            }
           }
         }
       ]
