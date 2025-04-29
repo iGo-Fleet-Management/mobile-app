@@ -103,7 +103,6 @@ const SuggestedRouteScreen = () => {
   }, [])
 
   const handleStartTrip = () => {
-    console.log('Iniciando viagem com tipo:', tripType);
     navigation.navigate('ActiveTrip', { tripType });
   };
 

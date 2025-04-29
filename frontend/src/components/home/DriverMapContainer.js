@@ -6,7 +6,7 @@ import useDriverLocation from '../../utils/DriverLocation';
 import { authHeader } from '../../auth/AuthService';
 import { API_IGO, GOOGLE_MAPS_API_KEY } from '@env';
 
-const DriverMapContainer = ({ tripType }) => {
+const DriverMapContainer = ({ tripType, navigation }) => {
   const webViewRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeRequested, setRouteRequested] = useState(false);
@@ -18,7 +18,6 @@ const DriverMapContainer = ({ tripType }) => {
       
       try {
         const date = "2025-04-28";
-        console.log(tripType)
 
         const response = await fetch(`${API_IGO}trips/get-trip-data?date=${date}&tripType=${tripType}`, {
           method: 'GET',
@@ -65,7 +64,6 @@ const DriverMapContainer = ({ tripType }) => {
     try {
       const apiKey = GOOGLE_MAPS_API_KEY;
       const fullAddress = `${address.street}, ${address.number}, ${address.neighbourhood}, ${address.city} - ${address.state}`;
-      console.log('Endereço completo:', fullAddress);
 
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`
@@ -124,6 +122,32 @@ const DriverMapContainer = ({ tripType }) => {
     };
   }, []);
 
+  const handleFinishTrip = () => {
+    Alert.alert(
+      'Finalizar Viagem',
+      'Tem certeza que deseja finalizar esta viagem?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Finalizar',
+          onPress: () => {
+            // Parar o compartilhamento da localização do motorista
+            socket.emit('stopSharing');
+            
+            // Desconectar o socket
+            socket.disconnect();
+            
+            // Voltar para a tela inicial
+            navigation.navigate('DriverHomeScreen');
+          }
+        }
+      ]
+    );
+  };
+
   const handleLocationUpdate = useCallback((coords) => {
     socket.emit('driverLocation', coords);
 
@@ -142,8 +166,7 @@ const DriverMapContainer = ({ tripType }) => {
       `;
       webViewRef.current.injectJavaScript(jsCode);
     } else {
-      console.log("Não foi possível atualizar o marcador: mapa carregado =", mapLoaded, 
-                 "webViewRef =", !!webViewRef.current);
+      console.warn("WebView não está carregada ou referência não disponível.");
     }
   }, [mapLoaded]); // Adicionar mapLoaded como dependência
 
@@ -188,6 +211,10 @@ const DriverMapContainer = ({ tripType }) => {
           console.error('WebView error:', syntheticEvent.nativeEvent);
         }}
       />
+
+      <TouchableOpacity style={styles.finishButton} onPress={handleFinishTrip}>
+        <Text style={styles.finishButtonText}>Finalizar Viagem</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -198,6 +225,26 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+  },
+  finishButton: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    backgroundColor: '#E53935',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  finishButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center'
   }
 });
 

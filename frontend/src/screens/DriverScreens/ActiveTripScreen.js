@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import DriverMapContainer from '../../components/home/DriverMapContainer';
-import { useRoute } from '@react-navigation/native'; 
+import { useRoute, useNavigation } from '@react-navigation/native'; 
 
 const ActiveTripScreen = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const tripType = route.params?.tripType || 'ida';
-  console.log('Trip Type:', tripType); // Log the trip type to verify it's being passed correctly
 
   return (
     <View style={styles.container}>
-      <DriverMapContainer tripType={tripType}/>
+      <DriverMapContainer tripType={tripType} navigation={navigation}/>
     </View>
   );
 };
