@@ -72,12 +72,10 @@ export default function HomeScreen({ navigation }) {
           address_type: address.address_type,
         }));
 
+        
         setUserProfileData(profileData);
         setUserId(user_id);
         setUserAddressData(addressData);
-        if (addressData.length > 0) {
-          setSelectedGoAddress(addressData[0].address_id);
-        }
 
         // After loading user data, check for existing trips
         await checkExistingTrips(user_id);
@@ -226,15 +224,21 @@ export default function HomeScreen({ navigation }) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
 
+      const casaAddress = userAddressData.find(addr => addr.address_type === "Casa");
+
+      console.log('selectedGoAddress', selectedGoAddress);
+      console.log('confirmedGoAddress', confirmedGoAddress);
+      console.log('casaAddress', casaAddress);
+
       const formattedDate = formatDateForAPI(currentDate);
       const payload = {
         date: formattedDate,
         goStop: {
-          address_id: confirmedGoAddress || selectedGoAddress,
+          address_id: selectedGoAddress,
           stop_date: formattedDate
         },
         backStop: {
-          address_id: userAddressData[0].address_id,
+          address_id: casaAddress.address_id,
           stop_date: formattedDate
         }
       };
@@ -330,11 +334,13 @@ export default function HomeScreen({ navigation }) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
 
+      const casaAddress = userAddressData.find(addr => addr.address_type === "Casa");
+
       const formattedDate = formatDateForAPI(currentDate);
       const payload = {
         date: formattedDate,
         backStop: {
-          address_id: selectedGoAddress,
+          address_id: casaAddress.address_id,
           stop_date: formattedDate
         }
       };
@@ -380,6 +386,8 @@ export default function HomeScreen({ navigation }) {
         throw new Error('Endereço não encontrado. Atualize seu perfil primeiro.');
       }
 
+      const casaAddress = userAddressData.find(addr => addr.address_type === "Casa");
+
       const formattedDate = formatDateForAPI(currentDate);
       const payload = {
         date: formattedDate,
@@ -388,7 +396,7 @@ export default function HomeScreen({ navigation }) {
           stop_date: formattedDate
         },
         backStop: {
-          address_id: userAddressData[0].address_id,
+          address_id: casaAddress.address_id,
           stop_date: formattedDate
         }
       };

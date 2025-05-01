@@ -54,7 +54,7 @@ const DriverHomeScreen = () => {
         
         if (responseData.success && responseData.data) {
           const { name, last_name } = responseData.data;
-          setDriverName(`${name} ${last_name}`.trim());
+          setDriverName(`${name}`.trim());
         } else {
           throw new Error('Invalid data format from API');
         }
