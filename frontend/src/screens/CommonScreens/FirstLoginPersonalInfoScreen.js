@@ -141,19 +141,9 @@ const FirstLoginPersonalInfoScreen = () => {
       try {
         setIsSaving(true);
         const token = await AsyncStorage.getItem('userToken');
-        console.log(token);
         
         const [day, month, year] = birthDate.split('/');
         const formattedBirthDate = `${year}-${month}-${day}`;
-
-        console.log('Dados enviados:', {
-          name,
-          last_name,
-          cpf: cpf.replace(/\D/g, ''),
-          birthdate: formattedBirthDate,
-          email,
-          phone: phone.replace(/\D/g, '')
-        });
         
         const response = await fetch(`${API_IGO}profile/update-profile`, {
           method: 'PUT',
@@ -174,7 +164,6 @@ const FirstLoginPersonalInfoScreen = () => {
         });
         
         const responseData = await response.json();
-        console.log(responseData);
 
         if (!response.ok) {
           throw new Error('Failed to update profile');

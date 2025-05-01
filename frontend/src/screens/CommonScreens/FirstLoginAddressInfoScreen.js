@@ -196,8 +196,6 @@ const FirstLoginAddressInfoScreen = () => {
         });
 
         const responseText = await response.text();
-        console.log('Status:', response.status);
-        console.log('Response:', responseText);
         
         if (!response.ok) {
           throw new Error('Failed to update address');

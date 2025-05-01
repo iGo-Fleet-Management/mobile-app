@@ -17,12 +17,14 @@ const DriverMapContainer = ({ tripType, navigation }) => {
       const headers = await authHeader();
       
       try {
-        const date = "2025-04-28";
+        //const date = "2025-04-28";
+        const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
         const response = await fetch(`${API_IGO}trips/get-trip-data?date=${date}&tripType=${tripType}`, {
           method: 'GET',
           headers
         });
+
         const data = await response.json();
         const rawData = data.resume[0];
         const processedData = await processRouteData(rawData.stops, tripType);
@@ -37,7 +39,7 @@ const DriverMapContainer = ({ tripType, navigation }) => {
   }, []);
 
   const processRouteData = async (stops, tripType) => {
-    if (!stops || stops.length < 2) return null;
+    if (!stops || stops.length < 0) return null;
 
     const coordinates = await Promise.all(
       stops.map(stop => geocodeAddress(stop.address))

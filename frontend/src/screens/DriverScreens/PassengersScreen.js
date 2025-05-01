@@ -97,7 +97,6 @@ const PassengersScreen = ({ navigation, route }) => {
   };
 
   const openPassengerModal = (passageiro) => {
-    console.log("Abrindo modal para:", passageiro.name);
     setSelectedPassenger(passageiro);
     setModalVisible(true);
   };

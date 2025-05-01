@@ -73,8 +73,8 @@ const DriverHomeScreen = () => {
   const fetchTripResume = async () => {
     try {
       const headers = await authHeader();
-      const date = '2025-04-28'
-      //const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      //const date = '2025-04-28'
+      const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
       const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${date}`, {
         method: 'GET',

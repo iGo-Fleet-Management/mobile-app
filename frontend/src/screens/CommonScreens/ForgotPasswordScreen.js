@@ -24,7 +24,6 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   const handleForgotPassword = async () => {
-    console.log("E-mail digitado:", email);
 
     try {
 
@@ -34,7 +33,6 @@ export default function ForgotPasswordScreen({ navigation }) {
       }
       
       if (!isValidEmail(email)) {
-        console.log("E-mail inválido detectado:", email);
         Alert.alert("Erro", "Por favor, insira um e-mail válido!");
         return;
       }

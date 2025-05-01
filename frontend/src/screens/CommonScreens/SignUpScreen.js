@@ -63,12 +63,6 @@ export default function SignUpScreen({ navigation }) {
   };
 
   const handleSignUp = () => {
-    console.log("Nome:", name);
-    console.log("Sobrenome:", surname);
-    console.log("E-mail:", email);
-    console.log("Telefone:", phone);
-    console.log("CPF:", cpf);
-    console.log("Data de Nascimento:", dob);
 
     if (!name || !surname || !email || !phone || !cpf || !dob) {
       Alert.alert("Erro", "Todos os campos são obrigatórios!");

@@ -239,8 +239,6 @@ export default function HomeScreen({ navigation }) {
         }
       };
 
-      console.log('Payload for round trip:', payload);
-
       const response = await fetch(`${API_IGO}stops/add-roundtrip-stop`, {
         method: 'POST',
         headers: {

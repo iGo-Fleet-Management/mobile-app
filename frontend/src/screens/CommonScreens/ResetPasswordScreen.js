@@ -48,7 +48,6 @@ export default function ResetPasswordScreen({ navigation }) {
       });
 
       const data = await response.json();  
-      console.log("Resposta do servidor:", data);
 
       Alert.alert("Sucesso", "Sua senha foi redefinida com sucesso!");
       navigation.navigate('Login');
