@@ -10,25 +10,55 @@ import {
   StatusBar
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { API_IGO } from '@env';
+import Button from '../../components/common/Button';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ResetPasswordScreen({ navigation }) {
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleResetPassword = () => {
-    if (!code || !newPassword || !confirmPassword) {
-      Alert.alert("Erro", "Todos os campos são obrigatórios!");
-      return;
-    }
+  const handleResetPassword = async () => {
 
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Erro", "As senhas não coincidem!");
-      return;
-    }
+    try {
+      const token = await AsyncStorage.getItem('resetToken');
+  
+      if (!code || !newPassword || !confirmPassword) {
+        Alert.alert("Erro", "Todos os campos são obrigatórios!");
+        return;
+      }
+  
+      if (newPassword !== confirmPassword) {
+        Alert.alert("Erro", "As senhas não coincidem!");
+        return;
+      }
 
-    Alert.alert("Sucesso", "Sua senha foi redefinida com sucesso!");
-    navigation.navigate('Login');
+      setIsLoading(true);
+      const response = await fetch(`${API_IGO}/auth/reset-password-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          token,
+          code,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();  
+      console.log("Resposta do servidor:", data);
+
+      Alert.alert("Sucesso", "Sua senha foi redefinida com sucesso!");
+      navigation.navigate('Login');
+      
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      Alert.alert('Erro', 'Ocorreu um erro durante o login. Por favor, tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -77,13 +107,12 @@ export default function ResetPasswordScreen({ navigation }) {
           placeholderTextColor="#999"
         />
 
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleResetPassword}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>Redefinir Senha</Text>
-        </TouchableOpacity>
+          <Button
+            title="Resetar Senha"
+            onPress={handleResetPassword}
+            loading={isLoading}
+            style={styles.button}
+          />
       </View>
     </SafeAreaView>
   );
@@ -141,20 +170,8 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#007BFF',
     width: '100%',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#007BFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+    marginTop: 20,
+    marginBottom: 20,
+    height: 52,
+  }
 });
