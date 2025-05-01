@@ -30,10 +30,6 @@ import SuggestedRouteScreen from '../screens/DriverScreens/SuggestedRouteScreen'
 import ActiveTripScreen from '../screens/DriverScreens/ActiveTripScreen';
 import AddPassengerScreen from '../screens/DriverScreens/AddPassengerScreen';
 
-// Check if these directories/files exist before uncommenting
-// Registration Screens
-// import DriverRegistrationScreen from '../screens/RegistrationScreens/DriverRegistrationScreen';
-// import PassengerRegistrationScreen from '../screens/RegistrationScreens/PassengerRegistrationScreen';
 
 const Stack = createStackNavigator();
 

@@ -80,6 +80,10 @@ const DriverProfileScreen = ({ navigation }) => {
     }
   };
 
+  const handleHelp = () => {
+    navigation.navigate('Ajuda');
+  };
+
   const cancelLogout = () => {
     setShowLogoutModal(false);
   };
@@ -90,7 +94,7 @@ const DriverProfileScreen = ({ navigation }) => {
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <MaterialIcons name="chevron-left" size={30} color="black" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => {}} style={styles.helpButton}>
+      <TouchableOpacity onPress={(handleHelp)} style={styles.helpButton}>
         <Text style={styles.helpText}>Ajuda</Text>
         <MaterialIcons name="help-outline" size={20} color="#007BFF" />
       </TouchableOpacity>
