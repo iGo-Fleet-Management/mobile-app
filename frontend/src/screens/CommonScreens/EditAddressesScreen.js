@@ -37,7 +37,32 @@ export default function EditAddressesScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    updateFormDataByAddressType(addressType);
+    if (!initialLoad && allAddresses.length > 0) {
+      updateFormDataByAddressType(addressType);
+    }
+  }, [allAddresses]);
+
+  useEffect(() => {
+    if (allAddresses.length === 0) return;
+  
+    const existing = allAddresses.find(a => a.address_type === addressType);
+  
+    setFormData({
+      addressData: [{
+        // se existir, usa; senão, mantém um “template” em branco
+        ...(existing ?? { 
+          address_type: addressType,
+          cep: '',
+          street: '',
+          number: '',
+          complement: '',
+          neighbourhood: '',
+          city: '',
+          state: ''
+        }),
+        address_id: existing?.address_id
+      }]
+    });
   }, [addressType, allAddresses]);
 
   const fetchAddressData = async () => {
@@ -88,18 +113,17 @@ export default function EditAddressesScreen({ navigation }) {
               city: address.city || '',
               state: address.state || ''
             }));
-            
-            // Definir o tipo de endereço padrão como 'Casa' ou o primeiro tipo encontrado
-            const defaultType = formattedAddresses.find(a => a.address_type === 'Casa') ? 
-              'Casa' : (formattedAddresses[0]?.address_type || 'Casa');
-            
-            setAddressType(defaultType);
-            
+
             // Armazenar todos os endereços em um estado para referência posterior
             setAllAddresses(formattedAddresses);
             
-            // Definir os dados do formulário com base no tipo de endereço atual
-            updateFormDataByAddressType(defaultType, formattedAddresses);
+            // Definir o tipo de endereço padrão como 'Casa' ou o primeiro tipo encontrado
+            const defaultType = formattedAddresses.find(a => a.address_type === 'Casa')
+              ? 'Casa'
+              : formattedAddresses[0].address_type;
+
+            setAddressType(defaultType);
+
           }
       } else {
         if (response.status === 401) {
@@ -128,22 +152,29 @@ export default function EditAddressesScreen({ navigation }) {
     // Encontra o endereço correspondente ao tipo no allAddresses
     const existingAddress = allAddresses.find(addr => addr.address_type === type);
   
-    setFormData(prev => ({
-      addressData: [{
-        ...(existingAddress || { // Mantém os dados existentes ou cria novo
-          address_type: type,
-          cep: '',
-          street: '',
-          number: '',
-          complement: '',
-          neighbourhood: '',
-          city: '',
-          state: ''
-        }),
-        // Mantém o address_id apenas se existir
-        address_id: existingAddress ? existingAddress.address_id : undefined
-      }]
-    }));
+    if (existingAddress) {
+      // Se encontrou o endereço do tipo solicitado, use-o
+      setFormData({
+        addressData: [{ ...existingAddress }]
+      });
+    } else {
+      setFormData(prev => ({
+        addressData: [{
+          ...(existingAddress || { // Mantém os dados existentes ou cria novo
+            address_type: type,
+            cep: '',
+            street: '',
+            number: '',
+            complement: '',
+            neighbourhood: '',
+            city: '',
+            state: ''
+          }),
+          // Mantém o address_id apenas se existir
+          address_id: existingAddress ? existingAddress.address_id : undefined
+        }]
+      }));
+    }
   };
 
   const handleChange = (field, value) => {
@@ -331,7 +362,6 @@ export default function EditAddressesScreen({ navigation }) {
                   ]}
                   onPress={() => {
                     setAddressType('Casa');
-                    updateFormDataByAddressType('Casa');
                   }}
                 >
                   <Text style={styles.addressTypeText}>Casa</Text>
@@ -345,7 +375,6 @@ export default function EditAddressesScreen({ navigation }) {
                   ]}
                   onPress={() => {
                     setAddressType('Outro');
-                    updateFormDataByAddressType('Outro');
                   }}
                 >
                   <Text style={styles.addressTypeText}>Outro</Text>

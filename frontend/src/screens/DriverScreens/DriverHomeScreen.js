@@ -194,15 +194,15 @@ const DriverHomeScreen = () => {
   };
 
   const onRefresh = async () => {
-  try {
-    setRefreshing(true);
-    await fetchTripResume();
-  } catch (error) {
-    console.error('Erro ao atualizar:', error);
-  } finally {
-    setRefreshing(false);
-  }
-};
+    try {
+      setRefreshing(true);
+      await fetchTripResume();
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -217,7 +217,7 @@ const DriverHomeScreen = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       <ScrollView
-        scrollEnabled={false}
+        contentContainerStyle={styles.scrollContainer}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -289,6 +289,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
