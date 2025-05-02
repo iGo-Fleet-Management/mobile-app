@@ -39,7 +39,6 @@ const DriverMapContainer = () => {
 
   const processRouteData = async (stops) => {
     if (!stops || stops.length < 2) return null;
-  
     const coordinates = await Promise.all(
       stops.map(stop => geocodeAddress(stop.address))
     );
@@ -55,8 +54,10 @@ const DriverMapContainer = () => {
   const geocodeAddress = async (address) => {
     try {
       const apiKey = GOOGLE_MAPS_API_KEY;
+      const fullAddress = `${address.street}, ${address.number}, ${address.neighbourhood}, ${address.city} - ${address.state}`;
+      
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`
       );
       const data = await response.json();
   

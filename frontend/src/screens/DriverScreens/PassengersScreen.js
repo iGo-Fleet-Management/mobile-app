@@ -288,35 +288,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     zIndex: -1,
   },
-  headerRight: {
-    width: 24,
-  },
   headerRightPlaceholder: {
     width: 24,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
   searchContainer: {
-    marginVertical: 12,
+    marginVertical: 4,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginVertical: 8,
     borderWidth: 1,
     borderColor: '#ddd',
   },
   searchIcon: {
     marginRight: 8,
+    marginLeft: 8,
   },
   searchInput: {
     flex: 1,
-    height: 24,
     fontSize: 16,
     color: '#000',
   },
