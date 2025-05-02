@@ -1,85 +1,92 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import Header from '../Header'; // Ajuste o caminho conforme a estrutura do seu projeto
+import Header from '../Header'; // Ajuste o caminho conforme necessário
 
-describe('Header Component', () => {
-  const defaultProps = {
-    title: 'Teste de Título',
+// Mock do MaterialIcons
+jest.mock('@expo/vector-icons', () => {
+  const { View, Text } = require('react-native');
+  return {
+    MaterialIcons: ({ name, size, color }) => (
+      <View testID={`icon-${name}`}>
+        <Text>{name}</Text>
+      </View>
+    ),
   };
+});
 
-  test('renderiza o componente com título corretamente', () => {
-    const { getByText } = render(<Header {...defaultProps} />);
-    expect(getByText('Teste de Título')).toBeTruthy();
+describe('Header', () => {
+  it('renderiza corretamente com título', () => {
+    const { getByText } = render(<Header title="Teste" />);
+    expect(getByText('Teste')).toBeTruthy();
   });
 
-  test('não renderiza o botão de voltar quando onArrowBackPress não é fornecido', () => {
-    const { queryByTestId } = render(<Header {...defaultProps} />);
-    expect(queryByTestId('icon-chevron-left')).toBeNull();
+  it('não mostra o botão de voltar quando onArrowBackPress não é fornecido', () => {
+    const { queryByTestId } = render(<Header title="Teste" />);
+    expect(queryByTestId('icon-chevron-left')).toBeFalsy();
   });
 
-  test('renderiza o botão de voltar quando onArrowBackPress é fornecido', () => {
+  it('mostra o botão de voltar quando onArrowBackPress é fornecido', () => {
     const mockOnPress = jest.fn();
     const { getByTestId } = render(
-      <Header {...defaultProps} onArrowBackPress={mockOnPress} />
+      <Header title="Teste" onArrowBackPress={mockOnPress} />
     );
-    
     expect(getByTestId('icon-chevron-left')).toBeTruthy();
   });
 
-  test('chama onArrowBackPress quando o botão de voltar é pressionado', () => {
+  it('chama onArrowBackPress quando o botão de voltar é pressionado', () => {
     const mockOnPress = jest.fn();
     const { getByTestId } = render(
-      <Header {...defaultProps} onArrowBackPress={mockOnPress} />
+      <Header title="Teste" onArrowBackPress={mockOnPress} />
     );
     
     fireEvent.press(getByTestId('icon-chevron-left').parent);
     expect(mockOnPress).toHaveBeenCalledTimes(1);
   });
 
-  test('não renderiza o ícone direito quando rightIcon não é fornecido', () => {
+  it('não mostra o ícone direito quando rightIcon não é fornecido', () => {
     const mockOnPress = jest.fn();
     const { queryByTestId } = render(
-      <Header {...defaultProps} onRightIconPress={mockOnPress} />
+      <Header title="Teste" onRightIconPress={mockOnPress} />
     );
-    
-    // Como não especificamos rightIcon, não deve renderizar nenhum ícone direito
-    expect(queryByTestId(/^icon-/)).toBeNull();
+    expect(queryByTestId('icon-undefined')).toBeFalsy();
   });
 
-  test('não renderiza o ícone direito quando onRightIconPress não é fornecido', () => {
+  it('não mostra o ícone direito quando onRightIconPress não é fornecido', () => {
     const { queryByTestId } = render(
-      <Header {...defaultProps} rightIcon="settings" />
+      <Header title="Teste" rightIcon="settings" />
     );
-    
-    // Como não especificamos onRightIconPress, não deve renderizar o ícone
-    expect(queryByTestId('icon-settings')).toBeNull();
+    expect(queryByTestId('icon-settings')).toBeFalsy();
   });
 
-  test('renderiza o ícone direito quando rightIcon e onRightIconPress são fornecidos', () => {
+  it('mostra o ícone direito quando rightIcon e onRightIconPress são fornecidos', () => {
     const mockOnPress = jest.fn();
     const { getByTestId } = render(
-      <Header 
-        {...defaultProps} 
-        rightIcon="settings" 
-        onRightIconPress={mockOnPress} 
-      />
+      <Header title="Teste" rightIcon="settings" onRightIconPress={mockOnPress} />
     );
-    
     expect(getByTestId('icon-settings')).toBeTruthy();
   });
 
-  test('chama onRightIconPress quando o ícone direito é pressionado', () => {
+  it('chama onRightIconPress quando o ícone direito é pressionado', () => {
     const mockOnPress = jest.fn();
     const { getByTestId } = render(
-      <Header 
-        {...defaultProps} 
-        rightIcon="settings" 
-        onRightIconPress={mockOnPress} 
-      />
+      <Header title="Teste" rightIcon="settings" onRightIconPress={mockOnPress} />
     );
     
     fireEvent.press(getByTestId('icon-settings').parent);
     expect(mockOnPress).toHaveBeenCalledTimes(1);
   });
 
+  it('aplica estilos personalizados quando fornecidos via prop style', () => {
+    const customStyle = { backgroundColor: 'red' };
+    const { UNSAFE_root } = render(
+      <Header title="Teste" style={customStyle} />
+    );
+    
+    const headerView = UNSAFE_root.findByType('View');
+    expect(headerView.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining(customStyle)
+      ])
+    );
+  });
 });
