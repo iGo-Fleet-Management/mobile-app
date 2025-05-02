@@ -114,6 +114,7 @@ const DriverHomeScreen = () => {
     }
   }
 
+  /* TODO: Verificar se é possível colocar dentro do useEffect fetchDriverName */
   useEffect(() => {
     fetchTripResume();
   } , []);
