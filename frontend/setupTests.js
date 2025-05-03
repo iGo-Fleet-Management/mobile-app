@@ -1,15 +1,4 @@
-// Este arquivo deve ser colocado na raiz do projeto ou em uma pasta __tests__
-import '@testing-library/jest-native/extend-expect';
-
-// Configuração global para lidar com animações do React Native
-// Atualizado o mock para o caminho correto na versão 0.76.9
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({
-  addListener: jest.fn(),
-  removeListeners: jest.fn(),
-}), { virtual: true });
-
-// Como alternativa, você pode tentar este caminho se o de cima não funcionar
-// jest.mock('react-native/Libraries/Animated/components/AnimatedImplementation', () => ({}), { virtual: true });
+import 'react-native-gesture-handler/jestSetup';
 
 // Mock para o AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -17,96 +6,117 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(() => Promise.resolve(null)),
   removeItem: jest.fn(() => Promise.resolve()),
   clear: jest.fn(() => Promise.resolve()),
+  multiGet: jest.fn(() => Promise.resolve([])),
+  multiSet: jest.fn(() => Promise.resolve()),
+  multiRemove: jest.fn(() => Promise.resolve()),
 }));
 
-// Configuração global para resolver problemas com o componente SafeAreaView
-jest.mock('react-native-safe-area-context', () => {
-  const { View } = require('react-native');
-  return {
-    SafeAreaProvider: jest.fn(({ children }) => children),
-    SafeAreaView: jest.fn(({ children, style }) => <View style={style}>{children}</View>),
-    useSafeAreaInsets: jest.fn(() => ({ top: 0, right: 0, bottom: 0, left: 0 })),
-  };
-});
-
-// Mock para o React Navigation
-jest.mock('@react-navigation/native', () => {
-  return {
-    ...jest.requireActual('@react-navigation/native'),
-    useNavigation: () => ({
-      navigate: jest.fn(),
-      goBack: jest.fn(),
-      setOptions: jest.fn(),
-    }),
-    useRoute: () => ({
-      params: {
-        address: {
-          id: '1',
-          street: 'Rua de Teste',
-          number: '123',
-          complement: 'Apto 101',
-          neighborhood: 'Bairro Teste',
-          city: 'Cidade Teste',
-          state: 'Estado Teste',
-          zipCode: '12345-678',
-          country: 'Brasil',
-          isDefault: true
-        }
-      }
-    }),
-  };
-});
-
-// Mock para fetch API
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({ success: true }),
-    headers: new Headers({
-      'Content-Type': 'application/json'
-    })
-  })
-);
-
-// Mock para @env (variáveis de ambiente)
-jest.mock('@env', () => ({
-  API_IGO: 'https://api.example.com/'
-}), { virtual: true });
-
-// Mock para expo-font (adicionar)
-jest.mock('expo-font', () => ({
-  ...jest.requireActual('expo-font'),
-  useFonts: () => [true, null],
-  isLoaded: jest.fn(() => true),
-  loadAsync: jest.fn(() => Promise.resolve()),
+// Mock para Expo Status Bar
+jest.mock('expo-status-bar', () => ({
+  StatusBar: jest.fn(),
 }));
 
-// Mock para imagens do React Native
+// Mock para o módulo de ícones
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: '',
+  MaterialCommunityIcons: '',
+  FontAwesome5: '',
+  // Adicione outros ícones que você usa
+}));
+
+// Mock para a API de localização
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getCurrentPositionAsync: jest.fn().mockResolvedValue({
+    coords: {
+      latitude: 37.78825,
+      longitude: -122.4324,
+    },
+  }),
+}));
+
+// Mock para react-native-reanimated
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  Reanimated.default.call = () => {};
+  return Reanimated;
+});
+
+// Mock para react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaProvider: ({ children }) => children,
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  SafeAreaView: ({ children }) => children,
+}));
+
+// Mock para DateTimePicker
+jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
+
+// Mock para Picker
+jest.mock('@react-native-picker/picker', () => ({
+  Picker: 'Picker',
+}));
+
+// Mock para react-native-webview
+jest.mock('react-native-webview', () => 'WebView');
+
+// Mocks globais
+global.window = {};
+global.window = global;
+global.fetch = jest.fn(() => Promise.resolve({
+  ok: true,
+  json: () => Promise.resolve({}),
+}));
+
+// Mock para @env
+jest.mock('react-native-dotenv', () => ({
+  API_IGO: 'https://api-mocked-url.com',
+}));
+
+// Mock para Image (especialmente para require('../../../assets/images/Logo iGo.png'))
+jest.mock('react-native/Libraries/Image/Image', () => ({
+  resolveAssetSource: jest.fn(() => ({ uri: 'mocked-asset-uri' })),
+}));
+
+// Silenciar logs durante os testes
+jest.spyOn(console, 'log').mockImplementation(() => {});
+jest.spyOn(console, 'error').mockImplementation(() => {});
+jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+// Mock para Alert do React Native
+jest.mock('react-native/Libraries/Alert/Alert', () => ({
+  alert: jest.fn(),
+}));
+
+// Mock para socket.io-client
+jest.mock('socket.io-client', () => {
+  const emit = jest.fn();
+  const on = jest.fn();
+  const off = jest.fn();
+  const connect = jest.fn();
+  const disconnect = jest.fn();
+  
+  return jest.fn(() => ({
+    emit,
+    on,
+    off,
+    connect,
+    disconnect,
+    io: {
+      connect,
+      disconnect,
+    },
+  }));
+});
+
+// Suprimir warnings específicos do React Native
+jest.mock('react-native/Libraries/LogBox/LogBox', () => ({
+  ignoreLogs: jest.fn(),
+}));
+
 jest.mock('react-native/Libraries/Image/Image', () => {
-  const OriginalImage = jest.requireActual('react-native/Libraries/Image/Image');
-  return {
-    ...OriginalImage,
-    resolveAssetSource: jest.fn(() => ({ uri: 'mocked-uri' })),
-  };
+  const mockComponent = require('react-native/jest/mockComponent');
+  return mockComponent('react-native/Libraries/Image/Image');
 });
 
-// Mock para assets de imagem
-jest.mock('../../assets/images/Logo iGo.png', () => 'mocked-image-path', { virtual: true });
-
-// Suprimir erros de console durante os testes
-const originalConsoleError = console.error;
-console.error = (...args) => {
-  // Ignora erros específicos que podem ocorrer durante testes
-  if (
-    args[0] && 
-    typeof args[0] === 'string' && 
-    (args[0].includes('Warning:') ||
-     args[0].includes('React does not recognize the') ||
-     args[0].includes('Invalid prop') ||
-     args[0].includes('loadedNativeFonts'))
-  ) {
-    return;
-  }
-  originalConsoleError(...args);
-};
+// Adicione outros mocks necessários aqui

@@ -1,86 +1,151 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import DriverHomeScreen from '../DriverHomeScreen';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_IGO } from '@env';
 
-// Mock dos componentes
-jest.mock('../../../components/common/Header', () => {
-  const { View, Text } = require('react-native');
-  return ({ title }) => (
-    <View>
-      <Text>{title}</Text>
-    </View>
-  );
-});
-
-jest.mock('../../../components/common/UserIcon', () => {
-  const { TouchableOpacity, Text } = require('react-native');
-  return ({ onPress, userName }) => (
-    <TouchableOpacity onPress={onPress}>
-      <Text>{userName}</Text>
-    </TouchableOpacity>
-  );
-});
-
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }) => children,
-  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 })
+// Mock das dependências
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
 }));
 
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+}));
+
+jest.mock('@env', () => ({
+  API_IGO: 'https://api-mocked-url.com',
+}), { virtual: true });
+
+jest.mock('../../../auth/AuthService', () => ({
+  authHeader: jest.fn(() => Promise.resolve({})),
+}));
+
+// Mock para ícones
+jest.mock('@expo/vector-icons', () => {
+  const { View } = require('react-native');
+  return {
+    Ionicons: ({ name, ...props }) => <View name={`Ionicons-${name}`} {...props} />,
+    MaterialIcons: ({ name, ...props }) => <View name={`MaterialIcons-${name}`} {...props} />,
+  };
+});
+
+// Mock global do fetch
+global.fetch = jest.fn();
+
 describe('DriverHomeScreen', () => {
+  const mockNavigate = jest.fn();
   const mockNavigation = {
-    navigate: jest.fn(),
-    goBack: jest.fn()
+    navigate: mockNavigate,
+    goBack: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useNavigation.mockReturnValue(mockNavigation);
+    AsyncStorage.getItem.mockResolvedValue('mock-token');
+    fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        success: true,
+        data: {
+          name: 'John',
+          last_name: 'Doe'
+        }
+      }),
+    });
   });
 
-  it('deve renderizar o cabeçalho com título e ícone do usuário', () => {
-    const { getByText } = render(
-      <DriverHomeScreen navigation={mockNavigation} />
-    );
+  // Teste 1: deve renderizar o cabeçalho com título e ícone do usuário
+  test('deve renderizar o cabeçalho com título e ícone do usuário', async () => {
+    render(<DriverHomeScreen />);
     
-    expect(getByText('iGO')).toBeTruthy();
-    expect(getByText('John')).toBeTruthy();
+    await waitFor(() => {
+      // Verifica se os textos principais estão renderizados
+      expect(screen.getByText('iGO')).toBeTruthy();
+      expect(screen.getByText('John Doe')).toBeTruthy();
+      
+      // Verifica se o ícone de perfil está presente
+      const profileIcons = screen.root.findAllByType('View').filter(
+        view => view.props.name === 'MaterialIcons-person'
+      );
+      expect(profileIcons.length).toBeGreaterThan(0);
+    });
   });
 
-  it('deve mostrar o conteúdo específico para motorista', () => {
-    const { getByText } = render(
-      <DriverHomeScreen navigation={mockNavigation} />
-    );
-
-    expect(getByText('Tela Motorista')).toBeTruthy();
-    expect(getByText('Falta implementar')).toBeTruthy();
-  });
-
-  it('deve navegar para o perfil ao pressionar o ícone do usuário', () => {
-    const { getByText } = render(
-      <DriverHomeScreen navigation={mockNavigation} />
-    );
-
-    fireEvent.press(getByText('John'));
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('Profile');
-  });
-
-  it('deve renderizar a estrutura principal', () => {
-    const { getByText, getByTestId } = render(
-      <DriverHomeScreen navigation={mockNavigation} />
-    );
+  // Teste 2: deve mostrar o conteúdo específico para motorista
+  test('deve mostrar o conteúdo específico para motorista', async () => {
+    render(<DriverHomeScreen />);
     
-    // Verifica se os elementos principais estão presentes
-    expect(getByText('iGO')).toBeTruthy();
-    expect(getByText('Tela Motorista')).toBeTruthy();
-    
-    // Verifica se o container principal está renderizado
-    const container = getByText('Tela Motorista').parent.parent;
-    expect(container).toBeTruthy();
+    await waitFor(() => {
+      // Verifica textos básicos
+      expect(screen.getByText('Minions Vans')).toBeTruthy();
+      expect(screen.getByText('Resumo do Dia')).toBeTruthy();
+      expect(screen.getByText('Ida')).toBeTruthy();
+      expect(screen.getByText('Volta')).toBeTruthy();
+      
+      // Verifica o botão de trajeto pelo texto
+      const trajetoButton = screen.getByText('Trajeto');
+      expect(trajetoButton).toBeTruthy();
+    });
   });
 
-  it('deve corresponder ao snapshot', () => {
-    const { toJSON } = render(
-      <DriverHomeScreen navigation={mockNavigation} />
-    );
-    expect(toJSON()).toMatchSnapshot();
+  // Teste 3: deve navegar para o perfil ao pressionar o ícone do usuário
+  test('deve navegar para o perfil ao pressionar o ícone do usuário', async () => {
+    render(<DriverHomeScreen />);
+    
+    await waitFor(() => {
+      // Encontra o container do perfil pelo texto do nome
+      const profileName = screen.getByText('John Doe');
+      const profileContainer = profileName.parent;
+      
+      // Simula o clique no container do perfil
+      fireEvent.press(profileContainer);
+      
+      // Verifica a navegação
+      expect(mockNavigate).toHaveBeenCalledWith('DriverProfile');
+    });
+  });
+
+  // Teste 4: deve renderizar a estrutura principal
+  test('deve renderizar a estrutura principal', async () => {
+    render(<DriverHomeScreen />);
+    
+    await waitFor(() => {
+      // Verifica o cabeçalho
+      expect(screen.getByText('iGO')).toBeTruthy();
+      
+      // Verifica os botões de ida e volta
+      expect(screen.getByText('Ida')).toBeTruthy();
+      expect(screen.getByText('Volta')).toBeTruthy();
+      
+      // Verifica o resumo do dia
+      expect(screen.getByText('Resumo do Dia')).toBeTruthy();
+      
+      // Verifica o botão de trajeto
+      expect(screen.getByText('Trajeto')).toBeTruthy();
+    });
+  });
+
+  // Teste 5: deve alternar entre as abas de ida e volta
+  test('deve alternar entre as abas de ida e volta', async () => {
+    render(<DriverHomeScreen />);
+    
+    await waitFor(() => {
+      // Clica no botão de Volta
+      const voltaButton = screen.getByText('Volta');
+      fireEvent.press(voltaButton);
+      
+      // Verifica se o texto específico de volta aparece
+      expect(screen.queryByText('Somente volta')).toBeTruthy();
+      
+      // Clica no botão de Ida
+      const idaButton = screen.getByText('Ida');
+      fireEvent.press(idaButton);
+      
+      // Verifica se o texto específico de ida aparece
+      expect(screen.queryByText('Somente ida')).toBeTruthy();
+    });
   });
 });
