@@ -36,7 +36,7 @@ export default function ResetPasswordScreen({ navigation }) {
       }
 
       setIsLoading(true);
-      const response = await fetch(`${API_IGO}/auth/reset-password-token`, {
+      const response = await fetch(`${API_IGO}auth/reset-password-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

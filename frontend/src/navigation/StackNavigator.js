@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 // Import Auth Screens
 import LoginScreen from '../screens/CommonScreens/LoginScreen';
 import ForgotPasswordScreen from '../screens/CommonScreens/ForgotPasswordScreen';
+import AuthLoadingScreen from '../screens/CommonScreens/AuthLoadingScreen';
 //import SignUpScreen from '../screens/CommonScreens/SignUpScreen';
 import ResetPasswordScreen from '../screens/CommonScreens/ResetPasswordScreen';
 
@@ -37,7 +38,7 @@ const StackNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="AuthLoading"
         screenOptions={{
           headerShown: false,
           gestureEnabled: true,
@@ -45,6 +46,7 @@ const StackNavigator = () => {
         }}
       >
         {/* Auth Screens */}
+        <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         {/* <Stack.Screen name="SignUp" component={SignUpScreen} /> */}

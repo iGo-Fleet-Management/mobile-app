@@ -38,7 +38,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       }
       
       setIsLoading(true);
-      const response = await fetch(`${API_IGO}/auth/forgot-password`, {
+      const response = await fetch(`${API_IGO}auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

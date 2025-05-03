@@ -86,7 +86,7 @@ export default function AddPassengerScreen() {
         return;
       }
       
-      const response = await fetch(`${API_IGO}/auth/register`, {
+      const response = await fetch(`${API_IGO}auth/register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

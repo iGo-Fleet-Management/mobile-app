@@ -48,7 +48,7 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_IGO}/auth/login`, {
+      const response = await fetch(`${API_IGO}auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

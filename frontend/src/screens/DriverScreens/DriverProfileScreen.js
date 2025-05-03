@@ -29,7 +29,7 @@ const DriverProfileScreen = ({ navigation }) => {
         throw new Error('No authentication token found');
       }
   
-      const response = await fetch(`${API_IGO}/profile`, {
+      const response = await fetch(`${API_IGO}profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

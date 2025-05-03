@@ -46,7 +46,7 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      const response = await fetch(`${API_IGO}/profile`, {
+      const response = await fetch(`${API_IGO}profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -100,7 +100,7 @@ export default function HomeScreen({ navigation }) {
   const checkExistingTrips = async (userId) => {
     try {
       const formattedDate = formatDateForAPI(currentDate);
-      const response = await fetch(`${API_IGO}/trips/get-trip-resume?date=${formattedDate}`, {
+      const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${formattedDate}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`,
