@@ -1,10 +1,11 @@
 {
   "expo": {
-    "name": "components-navigation",
+    "name": "iGO",
+    "displayName": "iGO",
     "slug": "snack-30f7cbbd-09f9-428e-b00f-2db04caaf368",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/LogoIcone.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -20,18 +21,23 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/LogoIcone.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
-      ]
+      ],
+      "package": "com.hugo_carvalho.snack30f7cbbd09f9428eb00f2db04caaf368",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "eas": {
+        "projectId": "466b0fad-bfbc-4d9f-9072-f5bca5255f22"
+      }
     }
   }
 }

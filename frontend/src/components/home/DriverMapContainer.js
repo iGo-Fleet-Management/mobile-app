@@ -185,7 +185,7 @@ const DriverMapContainer = ({ tripType, navigation }) => {
     }
   }, [mapLoaded, routeData]);
 
-  const mapSource = require('../../../assets/driverMap.html');
+  const mapSource = { uri: 'https://backend-igo.onrender.com/driverMap.html' };
 
   return (
     <View style={styles.container}>

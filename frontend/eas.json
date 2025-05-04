@@ -15,6 +15,10 @@
       }
     },
     "preview": {
+      "env": {
+        "API_IGO": "https://backend-igo.onrender.com/api/",
+        "GOOGLE_MAPS_API_KEY": "AIzaSyCvcxlQaCUGRYvSQWUqoiaEKEYN3dY8Vz0"
+      },
       "android": {
         "buildType": "apk"
       }

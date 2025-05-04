@@ -39,7 +39,8 @@ const MapContainer = ({ location }) => {
     };
   }, []);
 
-  const mapSource = require('../../../assets/passengerMap.html');
+  const mapSource = { uri: 'https://backend-igo.onrender.com/passengerMap.html' };
+
 
   return (
     <View style={styles.container}>
