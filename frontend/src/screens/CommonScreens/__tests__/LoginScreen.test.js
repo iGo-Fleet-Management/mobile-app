@@ -1,111 +1,166 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from '../LoginScreen';
 
-// Mock do Alert.alert
-jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+// Mock the modules we need
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  setItem: jest.fn(() => Promise.resolve()),
+}));
 
-// Mock do módulo de navegação
+jest.mock('@env', () => ({
+  API_IGO: 'https://api-mocked-url.com',
+}), { virtual: true });
+
+// Mock the navigation
 const mockNavigation = {
   navigate: jest.fn(),
+  reset: jest.fn(),
 };
+
+// Mock fetch for API calls
+global.fetch = jest.fn();
+
+// Mock Alert
+jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 describe('LoginScreen', () => {
   beforeEach(() => {
-    // Limpa os mocks entre os testes
+    // Clear all mocks before each test
     jest.clearAllMocks();
+    
+    // Reset fetch mock
+    fetch.mockReset();
   });
 
-  it('renderiza corretamente', () => {
-    const { getByPlaceholderText, getByText } = render(
+  test('exibe erro quando tenta fazer login sem email', async () => {
+    // Render the component
+    const { getByText, getByPlaceholderText } = render(
       <LoginScreen navigation={mockNavigation} />
     );
-
-    // Verifica se os elementos principais estão presentes
-    expect(getByPlaceholderText('E-mail')).toBeTruthy();
-    expect(getByPlaceholderText('Senha')).toBeTruthy();
-    expect(getByText('Entrar')).toBeTruthy();
-    expect(getByText('Esqueceu a senha?')).toBeTruthy();
-  
+    
+    // Enter only password (no email)
+    const passwordInput = getByPlaceholderText('Digite sua senha');
+    fireEvent.changeText(passwordInput, 'senha123');
+    
+    // Click login button
+    const loginButton = getByText('Entrar');
+    fireEvent.press(loginButton);
+    
+    // Check if the correct error message is displayed
+    await waitFor(() => {
+      expect(getByText('Por favor, informe seu e-mail')).toBeTruthy();
+    });
+    
+    // Verify the API wasn't called
+    expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('mostra alerta quando campos estão vazios', () => {
+  test('exibe erro quando tenta fazer login sem senha', async () => {
+    // Render the component
+    const { getByText, getByPlaceholderText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+    
+    // Enter only email (no password)
+    const emailInput = getByPlaceholderText('Digite seu email');
+    fireEvent.changeText(emailInput, 'teste@exemplo.com');
+    
+    // Click login button
+    const loginButton = getByText('Entrar');
+    fireEvent.press(loginButton);
+    
+    // Check if the correct error message is displayed
+    await waitFor(() => {
+      expect(getByText('Por favor, informe sua senha')).toBeTruthy();
+    });
+    
+    // Verify the API wasn't called
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test('exibe erro quando o email é inválido', async () => {
+    // Render the component
+    const { getByText, getByPlaceholderText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+    
+    // Enter invalid email format
+    const emailInput = getByPlaceholderText('Digite seu email');
+    fireEvent.changeText(emailInput, 'emailinvalido');
+    
+    // Enter password
+    const passwordInput = getByPlaceholderText('Digite sua senha');
+    fireEvent.changeText(passwordInput, 'senha123');
+    
+    // Click login button
+    const loginButton = getByText('Entrar');
+    fireEvent.press(loginButton);
+    
+    // Check if the correct error message is displayed
+    await waitFor(() => {
+      expect(getByText('Por favor, insira um e-mail válido')).toBeTruthy();
+    });
+    
+    // Verify the API wasn't called
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test('redireciona para tela de primeiro login quando reset_password é true', async () => {
+    // Mock successful API response with reset_password flag
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        success: true,
+        data: {
+          token: 'fake-token',
+          user_type: 'passageiro',
+          reset_password: true
+        }
+      })
+    });
+    
+    // Render the component
+    const { getByText, getByPlaceholderText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+    
+    // Fill in valid credentials
+    const emailInput = getByPlaceholderText('Digite seu email');
+    fireEvent.changeText(emailInput, 'teste@exemplo.com');
+    
+    const passwordInput = getByPlaceholderText('Digite sua senha');
+    fireEvent.changeText(passwordInput, 'senha123');
+    
+    // Click login button
+    const loginButton = getByText('Entrar');
+    fireEvent.press(loginButton);
+    
+    // Wait for async operations to complete
+    await waitFor(() => {
+      // Verify AsyncStorage was called with the token
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('userToken', 'fake-token');
+      
+      // Verify navigation reset was called to redirect to FirstLogin
+      expect(mockNavigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: 'FirstLogin' }],
+      });
+    });
+  });
+
+  test('navega para a tela de recuperação de senha quando o botão é pressionado', () => {
+    // Render the component
     const { getByText } = render(
       <LoginScreen navigation={mockNavigation} />
     );
-
-    // Tenta fazer login sem preencher os campos
-    fireEvent.press(getByText('Entrar'));
-
-    // Verifica se o Alert.alert foi chamado com a mensagem correta
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Erro',
-      'Todos os campos são obrigatórios!'
-    );
-  });
-
-  it('valida formato de e-mail', () => {
-    const { getByText, getByPlaceholderText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    // Preenche com e-mail inválido e senha
-    fireEvent.changeText(getByPlaceholderText('E-mail'), 'email-invalido');
-    fireEvent.changeText(getByPlaceholderText('Senha'), 'senha123');
     
-    // Tenta fazer login
-    fireEvent.press(getByText('Entrar'));
-
-    // Verifica se o Alert.alert foi chamado com a mensagem de erro de e-mail
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Erro',
-      'Por favor, insira um e-mail válido!'
-    );
-  });
-
-  it('navega para PassengerHomeScreen quando login de passageiro é bem-sucedido', () => {
-    const { getByText, getByPlaceholderText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    // Preenche com e-mail e senha de passageiro
-    fireEvent.changeText(getByPlaceholderText('E-mail'), 'passenger@gmail.com');
-    fireEvent.changeText(getByPlaceholderText('Senha'), 'senha123');
+    // Find and click the forgot password button
+    const forgotPasswordButton = getByText('Esqueceu a senha?');
+    fireEvent.press(forgotPasswordButton);
     
-    // Faz login
-    fireEvent.press(getByText('Entrar'));
-
-    // Verifica se a navegação foi chamada com a tela correta
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('PassengerHomeScreen');
-  });
-
-  it('navega para DriverHomeScreen quando login de motorista é bem-sucedido', () => {
-    const { getByText, getByPlaceholderText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    // Preenche com e-mail e senha de motorista
-    fireEvent.changeText(getByPlaceholderText('E-mail'), 'driver@gmail.com');
-    fireEvent.changeText(getByPlaceholderText('Senha'), 'senha123');
-    
-    // Faz login
-    fireEvent.press(getByText('Entrar'));
-
-    // Verifica se a navegação foi chamada com a tela correta
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('DriverHomeScreen');
-  });
-
-
-  it('navega para a tela de esqueceu a senha quando o link é pressionado', () => {
-    const { getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    // Pressiona o link de esqueceu a senha
-    fireEvent.press(getByText('Esqueceu a senha?'));
-
-    // Verifica se a navegação foi chamada com a tela correta
+    // Verify navigation was called with the correct screen
     expect(mockNavigation.navigate).toHaveBeenCalledWith('ForgotPassword');
   });
 });

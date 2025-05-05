@@ -56,8 +56,6 @@ describe('SearchBar', () => {
     expect(mockOnChangeText).toHaveBeenCalledTimes(1);
   });
 
- 
-
   it('deve usar o placeholder passado como propriedade', () => {
     const customPlaceholder = 'Digite para buscar';
     const { getByPlaceholderText } = render(
@@ -65,5 +63,53 @@ describe('SearchBar', () => {
     );
     
     expect(getByPlaceholderText(customPlaceholder)).toBeTruthy();
+  });
+
+  it('deve aplicar estilos personalizados quando a prop style é fornecida', () => {
+    const customStyle = { backgroundColor: 'lightblue', margin: 20 };
+    const { container } = render(
+      <SearchBar {...defaultProps} style={customStyle} />
+    );
+    
+    // Verificamos se o estilo personalizado foi aplicado
+    // Usando o método toJSON() para acessar a estrutura do componente renderizado
+    const searchContainer = container.children[0];
+    expect(searchContainer.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining(customStyle)
+      ])
+    );
+  });
+
+  it('deve renderizar o ícone de busca com as propriedades corretas', () => {
+    render(<SearchBar {...defaultProps} />);
+    
+    // Verificamos se o MaterialIcons foi chamado com os parâmetros corretos
+    expect(MaterialIcons).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'search',
+        size: 24,
+        color: 'gray'
+      }),
+      {}
+    );
+  });
+
+  it('deve renderizar o TextInput com as propriedades corretas', () => {
+    const { getByPlaceholderText } = render(<SearchBar {...defaultProps} />);
+    
+    const input = getByPlaceholderText('Pesquisar');
+    expect(input.props.onChangeText).toBe(mockOnChangeText);
+    expect(input.props.value).toBe('');
+  });
+
+  it('deve permitir entrada de texto longa no campo de busca', () => {
+    const { getByPlaceholderText } = render(<SearchBar {...defaultProps} />);
+    
+    const input = getByPlaceholderText('Pesquisar');
+    const longText = 'Este é um texto muito longo para testar o campo de busca e garantir que ele funcione corretamente';
+    fireEvent.changeText(input, longText);
+    
+    expect(mockOnChangeText).toHaveBeenCalledWith(longText);
   });
 });

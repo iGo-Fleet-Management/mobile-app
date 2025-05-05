@@ -7,8 +7,8 @@ import UserIcon from '../UserIcon';
 jest.mock('@expo/vector-icons', () => {
   const { View } = require('react-native');
   return {
-    MaterialIcons: jest.fn(({ name, size, color }) => {
-      return <View testID={`icon-${name}`} />;
+    MaterialIcons: jest.fn(({ name, size, color, style }) => {
+      return <View testID={`icon-${name}`} style={style} />;
     })
   };
 });
@@ -21,60 +21,98 @@ describe('UserIcon', () => {
     mockOnPress.mockClear();
   });
 
-  it('deve renderizar com a primeira letra do nome quando userName é fornecido', () => {
-    const { getByText, queryByTestId } = render(
-      <UserIcon userName="Maria" onPress={mockOnPress} />
+  it('deve renderizar o componente corretamente com um nome de usuário', () => {
+    const { getByText } = render(
+      <UserIcon userName="José" onPress={mockOnPress} />
     );
     
-    expect(getByText('M')).toBeTruthy();
-    expect(getByText('Maria')).toBeTruthy();
-    // Não deve mostrar o ícone person quando tem a letra
-    expect(queryByTestId('icon-person')).toBeNull();
+    expect(getByText('José')).toBeTruthy();
+    expect(getByText('J')).toBeTruthy();
   });
 
-  it('deve renderizar o ícone de pessoa quando userName não é fornecido', () => {
-    const { getByTestId, getByText } = render(
+  it('deve renderizar "Usuário" e o ícone de pessoa quando nenhum nome é fornecido', () => {
+    const { getByText, getByTestId } = render(
       <UserIcon onPress={mockOnPress} />
     );
     
-    expect(getByTestId('icon-person')).toBeTruthy();
     expect(getByText('Usuário')).toBeTruthy();
-  });
-
-  it('deve renderizar o ícone de pessoa quando userName é string vazia', () => {
-    const { getByTestId, getByText } = render(
-      <UserIcon userName="" onPress={mockOnPress} />
-    );
-    
     expect(getByTestId('icon-person')).toBeTruthy();
-    expect(getByText('Usuário')).toBeTruthy();
   });
 
-  it('deve renderizar a primeira letra em maiúsculo mesmo se o nome começar com minúsculo', () => {
+  it('deve chamar a função onPress quando o TouchableOpacity é pressionado', () => {
     const { getByText } = render(
-      <UserIcon userName="joão" onPress={mockOnPress} />
+      <UserIcon userName="Maria" onPress={mockOnPress} />
     );
     
-    expect(getByText('J')).toBeTruthy();
-    expect(getByText('joão')).toBeTruthy();
-  });
-
-  it('deve chamar onPress quando pressionado', () => {
-    const { getByText } = render(
-      <UserIcon userName="Pedro" onPress={mockOnPress} />
-    );
-    
-    fireEvent.press(getByText('Pedro').parent);
+    const touchableComponent = getByText('Maria').parent;
+    fireEvent.press(touchableComponent);
     
     expect(mockOnPress).toHaveBeenCalledTimes(1);
   });
 
-  it('deve limitar o texto do nome a uma linha', () => {
+  it('deve mostrar apenas a primeira letra do nome do usuário em maiúscula', () => {
     const { getByText } = render(
-      <UserIcon userName="Nome muito longo para testar" onPress={mockOnPress} />
+      <UserIcon userName="ana" onPress={mockOnPress} />
     );
     
-    const nameText = getByText('Nome muito longo para testar');
-    expect(nameText.props.numberOfLines).toBe(1);
+    expect(getByText('A')).toBeTruthy();
+  });
+
+  it('deve limitar o nome de usuário a uma linha', () => {
+    const { getByText } = render(
+      <UserIcon userName="Nome Muito Longo Para Teste" onPress={mockOnPress} />
+    );
+    
+    const nameComponent = getByText('Nome Muito Longo Para Teste');
+    expect(nameComponent.props.numberOfLines).toBe(1);
+  });
+
+  it('deve extrair apenas a primeira letra mesmo de nomes compostos', () => {
+    const { getByText } = render(
+      <UserIcon userName="João Silva" onPress={mockOnPress} />
+    );
+    
+    expect(getByText('J')).toBeTruthy();
+  });
+
+  it('deve renderizar o ícone de pessoa quando userName é uma string vazia', () => {
+    const { getByText, getByTestId } = render(
+      <UserIcon userName="" onPress={mockOnPress} />
+    );
+    
+    expect(getByText('Usuário')).toBeTruthy();
+    expect(getByTestId('icon-person')).toBeTruthy();
+  });
+
+  it('deve usar o estilo correto para o container do ícone', () => {
+    const { getByText } = render(
+      <UserIcon userName="Carlos" onPress={mockOnPress} />
+    );
+    
+    const letterComponent = getByText('C');
+    const iconContainer = letterComponent.parent;
+    
+    // Verificando algumas das propriedades de estilo principais
+    expect(iconContainer.props.style).toEqual(
+      expect.objectContaining({
+        backgroundColor: '#3f51b5',
+        borderRadius: 18,
+        width: 36,
+        height: 36,
+      })
+    );
+  });
+
+  it('deve renderizar o ícone MaterialIcons com os parâmetros corretos quando não há nome', () => {
+    render(<UserIcon onPress={mockOnPress} />);
+    
+    expect(MaterialIcons).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'person',
+        size: 24,
+        color: 'white'
+      }),
+      {}
+    );
   });
 });

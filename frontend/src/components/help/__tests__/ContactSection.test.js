@@ -1,45 +1,61 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import ContactSection from '../ContactSection'; 
+import ContactSection from '../ContactSection';
 
 describe('ContactSection', () => {
-  const mockOnContactPress = jest.fn();
-  
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renderiza o título corretamente', () => {
-    const { getByText } = render(
-      <ContactSection onContactPress={mockOnContactPress} />
-    );
+  it('renderiza corretamente', () => {
+    const { getByText } = render(<ContactSection onContactPress={() => {}} />);
     
+    // Verifica se os textos estão presentes
     expect(getByText('Precisa de mais ajuda?')).toBeTruthy();
-  });
-
-  it('renderiza o botão de contato corretamente', () => {
-    const { getByText } = render(
-      <ContactSection onContactPress={mockOnContactPress} />
-    );
-    
     expect(getByText('Contatar Suporte')).toBeTruthy();
   });
-
-  it('chama onContactPress quando o botão é pressionado', () => {
-    const { getByText } = render(
-      <ContactSection onContactPress={mockOnContactPress} />
-    );
+  
+  it('chama a função onContactPress quando o botão é pressionado', () => {
+    // Mock da função onContactPress
+    const mockOnContactPress = jest.fn();
     
-    const contactButton = getByText('Contatar Suporte');
-    fireEvent.press(contactButton);
+    const { getByText } = render(<ContactSection onContactPress={mockOnContactPress} />);
     
+    // Encontra o botão pelo texto e simula um clique
+    const button = getByText('Contatar Suporte');
+    fireEvent.press(button);
+    
+    // Verifica se a função foi chamada
     expect(mockOnContactPress).toHaveBeenCalledTimes(1);
   });
-
-  it('não chama onContactPress se o botão não for pressionado', () => {
-    render(<ContactSection onContactPress={mockOnContactPress} />);
+  
+  it('aplica os estilos corretamente', () => {
+    const { getByText } = render(<ContactSection onContactPress={() => {}} />);
     
-    expect(mockOnContactPress).not.toHaveBeenCalled();
+    // Verifica o título
+    const title = getByText('Precisa de mais ajuda?');
+    expect(title.props.style).toMatchObject({
+      fontSize: 16,
+      marginBottom: 10,
+    });
+    
+    // Verifica o texto do botão
+    const buttonText = getByText('Contatar Suporte');
+    expect(buttonText.props.style).toMatchObject({
+      color: '#ffffff',
+      fontWeight: '500',
+    });
   });
-
+  
+  it('renderiza sem a função onContactPress', () => {
+    // Este teste verifica que não há erro quando onContactPress não é fornecido
+    // (embora na prática você provavelmente queira exigir essa prop)
+    
+    // Silenciando temporariamente os erros de console para este teste
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+    
+    expect(() => {
+      render(<ContactSection />);
+    }).not.toThrow();
+    
+    // Restaurando console.error
+    console.error = originalConsoleError;
+  });
 });

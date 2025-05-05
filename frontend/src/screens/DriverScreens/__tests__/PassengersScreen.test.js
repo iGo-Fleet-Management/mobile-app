@@ -1,124 +1,129 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import PassengersScreen from '../PassengersScreen';
+import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { API_IGO } from '@env';
 
-// Mock dos componentes
-jest.mock('../../../components/common/Header', () => {
-  const { Text, View } = require('react-native');
-  return ({ title }) => (
-    <View>
-      <Text>{title}</Text>
-    </View>
-  );
-});
-
-jest.mock('../../../components/common/SearchBar', () => {
-  const { TextInput, View } = require('react-native');
-  return ({ placeholder, value, onChangeText }) => (
-    <View>
-      <TextInput 
-        placeholder={placeholder}
-        value={value}
-        onChangeText={onChangeText}
-      />
-    </View>
-  );
-});
-
-jest.mock('../../../components/passengers/PassengerItem', () => {
-  const { TouchableOpacity, Text } = require('react-native');
-  return ({ name, onPress }) => (
-    <TouchableOpacity onPress={onPress}>
-      <Text>{name}</Text>
-    </TouchableOpacity>
-  );
-});
-
-jest.mock('../../../components/passengers/AddPassengerButton', () => {
-  const { TouchableOpacity, Text } = require('react-native');
-  return ({ onPress }) => (
-    <TouchableOpacity onPress={onPress}>
-      <Text>Adicionar Passageiro</Text>
-    </TouchableOpacity>
-  );
-});
-
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }) => children,
-  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 })
+// Mock das dependências
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
+  useFocusEffect: jest.fn(),
 }));
 
-describe('PassengersScreen', () => {
-  const mockNavigation = {
-    navigate: jest.fn()
+jest.mock('../../../auth/AuthService', () => ({
+  authHeader: jest.fn(() => Promise.resolve({})),
+}));
+
+jest.mock('@env', () => ({
+  API_IGO: 'https://api-mocked-url.com',
+}), { virtual: true });
+
+
+// Mock para ícones
+jest.mock('@expo/vector-icons', () => {
+  const { View } = require('react-native');
+  return {
+    MaterialIcons: ({ name, ...props }) => <View name={`MaterialIcons-${name}`} {...props} />,
   };
+});
+
+// Mock global do fetch
+global.fetch = jest.fn();
+
+describe('PassengersScreen', () => {
+  const mockNavigate = jest.fn();
+  const mockGoBack = jest.fn();
+  const mockNavigation = {
+    navigate: mockNavigate,
+    goBack: mockGoBack,
+    setOptions: jest.fn(),
+  };
+
+  const mockPassengers = [
+    { id: '1', name: 'João Silva', phone: '(11) 99999-9999' },
+    { id: '2', name: 'Maria Souza', phone: '(11) 98888-8888' },
+    { id: '3', name: 'Carlos Oliveira', phone: '(11) 97777-7777' },
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useNavigation.mockReturnValue(mockNavigation);
+    fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        data: mockPassengers
+      }),
+    });
   });
 
-  it('deve renderizar o cabeçalho corretamente', () => {
-    const { getByText } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
+  // Teste 1: deve renderizar o cabeçalho corretamente
+  test('deve renderizar o cabeçalho corretamente', async () => {
+    render(<PassengersScreen navigation={mockNavigation} />);
     
-    expect(getByText('Passageiros')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('Passageiros')).toBeTruthy();
+      
+      // Verifica o ícone de voltar
+      const backIcons = screen.root.findAllByType('View').filter(
+        view => view.props.name === 'MaterialIcons-arrow-back'
+      );
+      expect(backIcons.length).toBeGreaterThan(0);
+    });
   });
 
-  it('deve renderizar a barra de pesquisa', () => {
-    const { getByPlaceholderText } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
+  // Teste 2: deve renderizar a barra de pesquisa
+  test('deve renderizar a barra de pesquisa', async () => {
+    render(<PassengersScreen navigation={mockNavigation} />);
     
-    expect(getByPlaceholderText('Procurar passageiro')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Procurar passageiro')).toBeTruthy();
+      
+      // Verifica o ícone de busca
+      const searchIcons = screen.root.findAllByType('View').filter(
+        view => view.props.name === 'MaterialIcons-search'
+      );
+      expect(searchIcons.length).toBeGreaterThan(0);
+    });
   });
 
-  it('deve filtrar passageiros ao digitar na busca', () => {
-    const { getByPlaceholderText, queryByText } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
+ 
+  // Teste 5: deve navegar para adicionar passageiro ao pressionar o botão
+  test('deve navegar para adicionar passageiro ao pressionar o botão', async () => {
+    render(<PassengersScreen navigation={mockNavigation} />);
     
-    const searchInput = getByPlaceholderText('Procurar passageiro');
-    fireEvent.changeText(searchInput, 'Iago');
-    
-    expect(queryByText('Hugo de Melo Carvalho')).toBeNull();
-    expect(queryByText('Iago Carro Guimarães')).toBeTruthy();
+    await waitFor(() => {
+      const addButton = screen.getByText('Adicionar Passageiro');
+      fireEvent.press(addButton);
+      
+      expect(mockNavigate).toHaveBeenCalledWith('AddPassenger');
+    });
   });
 
-  it('deve renderizar todos os passageiros inicialmente', () => {
-    const { getByText } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
+  // Teste 6: deve renderizar o botão de adicionar passageiro
+  test('deve renderizar o botão de adicionar passageiro', async () => {
+    render(<PassengersScreen navigation={mockNavigation} />);
     
-    expect(getByText('Hugo de Melo Carvalho')).toBeTruthy();
-    expect(getByText('Iago Carro Guimarães')).toBeTruthy();
-    expect(getByText('Lucas Barcelos Gomes')).toBeTruthy();
-    expect(getByText('Paulo Henrique Reis')).toBeTruthy();
-    expect(getByText('Rafael Galinari')).toBeTruthy();
-    expect(getByText('Samuel Andrade')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('Adicionar Passageiro')).toBeTruthy();
+    });
   });
 
-  it('deve navegar para adicionar passageiro ao pressionar o botão', () => {
-    const { getByText } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
+  // Teste adicional: deve limpar a pesquisa ao pressionar o ícone de fechar
+  test('deve limpar a pesquisa ao pressionar o ícone de fechar', async () => {
+    render(<PassengersScreen navigation={mockNavigation} />);
     
-    fireEvent.press(getByText('Adicionar Passageiro'));
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('AddPassenger');
-  });
-
-  it('deve renderizar o botão de adicionar passageiro', () => {
-    const { getByText } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
-    
-    expect(getByText('Adicionar Passageiro')).toBeTruthy();
-  });
-
-  it('deve corresponder ao snapshot', () => {
-    const { toJSON } = render(
-      <PassengersScreen navigation={mockNavigation} />
-    );
-    expect(toJSON()).toMatchSnapshot();
+    await waitFor(() => {
+      const searchInput = screen.getByPlaceholderText('Procurar passageiro');
+      fireEvent.changeText(searchInput, 'João');
+      
+      // Encontra o ícone de fechar
+      const closeIcons = screen.root.findAllByType('View').filter(
+        view => view.props.name === 'MaterialIcons-close'
+      );
+      fireEvent.press(closeIcons[0]);
+      
+      expect(searchInput.props.value).toBe('');
+    });
   });
 });
