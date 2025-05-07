@@ -30,9 +30,15 @@ const SuggestedRouteScreen = () => {
 
       try {
         //const date = "2025-04-28";
-        const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        const today = new Date();
 
-        const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${date}`, {
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // +1 porque janeiro = 0
+        const day = String(today.getDate()).padStart(2, '0');
+
+        const localDate = `${year}-${month}-${day}`;
+
+        const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${localDate}`, {
           method: 'GET',
           headers
         });
@@ -40,7 +46,7 @@ const SuggestedRouteScreen = () => {
         const data = await response.json();
 
         // ADICIONADO: Buscar usuários liberados
-        const releasedResponse = await fetch(`${API_IGO}trips/get-trip-released-users?date=${date}`, {
+        const releasedResponse = await fetch(`${API_IGO}trips/get-trip-released-users?date=${localDate}`, {
           method: 'GET',
           headers
         });

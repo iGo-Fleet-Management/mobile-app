@@ -93,7 +93,7 @@ export default function AddPassengerScreen() {
           'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify({
-          user_type: 'passenger',
+          user_type: 'passageiro',
           name,
           last_name,
           email,

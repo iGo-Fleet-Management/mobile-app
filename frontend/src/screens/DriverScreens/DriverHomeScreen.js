@@ -73,15 +73,22 @@ const DriverHomeScreen = () => {
   const fetchTripResume = async () => {
     try {
       const headers = await authHeader();
-      //const date = '2025-04-28'
-      const date = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
-      const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${date}`, {
+      const today = new Date();
+
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0'); // +1 porque janeiro = 0
+      const day = String(today.getDate()).padStart(2, '0');
+
+      const localDate = `${year}-${month}-${day}`;
+
+      const response = await fetch(`${API_IGO}trips/get-trip-resume?date=${localDate}`, {
         method: 'GET',
         headers
       });
       
       const data = await response.json();
+      console.log('Trip Resume Data:', data); // Log para depuração
 
       if (data.status === "success") {
         if (data.resume.length > 0) {
